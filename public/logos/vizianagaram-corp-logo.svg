@@ -1,0 +1,31 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="92" r="82" fill="#FFFFFF" stroke="#DC2626" stroke-width="6" stroke-dasharray="5 3"/>
+  <circle cx="100" cy="92" r="76" fill="#FEF08A" stroke="#B45309" stroke-width="2"/>
+  <circle cx="100" cy="92" r="68" fill="#FEE2E2" stroke="#DC2626" stroke-width="3"/>
+  <path id="vmcTxt" d="M 36 92 A 64 64 0 0 1 164 92" fill="none"/>
+  <text fill="#1E293B" font-size="9" font-weight="900" letter-spacing="0.8">
+    <textPath href="#vmcTxt" startOffset="50%" text-anchor="middle">VIZIANAGARAM MUNICIPAL CORPORATION</textPath>
+  </text>
+  <circle cx="100" cy="94" r="54" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.5"/>
+  <g transform="translate(100, 20)">
+    <path d="M -30 4 Q 0 -4 30 4 L 26 12 Q 0 6 -26 12 Z" fill="#F59E0B" stroke="#B45309"/>
+    <circle cx="0" cy="3" r="3" fill="#1E293B"/>
+    <path d="M -8 10 C -6 2 4 2 8 8 L 4 12 L -4 12 Z" fill="#1E293B"/>
+  </g>
+  <g transform="translate(94, 52)">
+    <path d="M 2 48 L 4 12 L 8 4 L 14 4 L 18 12 L 20 48 Z" fill="#FDE047" stroke="#854D0E" stroke-width="1.5"/>
+    <path d="M 6 4 Q 11 -6 16 4 Z" fill="#DC2626"/>
+    <circle cx="11" cy="22" r="5" fill="#FFFFFF" stroke="#1E293B" stroke-width="1"/>
+    <circle cx="11" cy="22" r="1" fill="#DC2626"/>
+    <rect x="9" y="32" width="4" height="6" rx="2" fill="#1E293B"/>
+    <rect x="9" y="40" width="4" height="6" rx="2" fill="#1E293B"/>
+  </g>
+  <polygon points="122,98 124,74 134,74 136,98" fill="#0F172A"/>
+  <polygon points="125,74 129,66 133,74" fill="#DC2626"/>
+  <polygon points="65,138 135,138 128,148 72,148" fill="#1D4ED8"/>
+  <text x="100" y="145.5" fill="#FFFFFF" font-size="7" font-weight="900" text-anchor="middle">సదా మీ సేవలో</text>
+  <g transform="translate(100, 168)">
+    <path d="M -90 4 Q -45 -6 0 -6 Q 45 -6 90 4 L 84 18 Q 45 6 0 6 Q -45 6 -84 18 Z" fill="#DC2626" stroke="#991B1B" stroke-width="1.5"/>
+    <text x="0" y="1" fill="#FFFFFF" font-size="10" font-weight="900" text-anchor="middle" letter-spacing="0.5">విజయనగరం నగరపాలక సంస్థ</text>
+  </g>
+</svg>

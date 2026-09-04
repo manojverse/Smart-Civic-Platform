@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered user profile with contact details, role, and activity timestamps",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "ward": { "type": "string" },
+        "role": { "type": "string", "enum": ["citizen", "municipal_commissioner", "ward_officer", "field_engineer", "admin"] },
+        "department": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLoginAt": { "type": "string" },
+        "loginCount": { "type": "number" },
+        "karmaScore": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Civic grievance reported with location, category, severity, and status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "severity": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "department": { "type": "string" },
+        "ward": { "type": "string" },
+        "landmark": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "photos": { "type": "array" },
+        "citizenId": { "type": "string" },
+        "citizenName": { "type": "string" },
+        "citizenEmail": { "type": "string" },
+        "citizenPhone": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "upvotes": { "type": "number" }
+      },
+      "required": ["id", "title", "category", "status", "ward"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Registered user accounts and profiles"
+    },
+    "/complaints/{complaintId}": {
+      "schema": "Complaint",
+      "description": "Real-time municipal complaints and grievances"
+    }
+  }
+}
