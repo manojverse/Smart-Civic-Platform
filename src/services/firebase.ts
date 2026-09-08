@@ -11,6 +11,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -64,6 +65,7 @@ export {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   serverTimestamp,
   signInWithEmailAndPassword,

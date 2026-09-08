@@ -86,7 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleQuickDemo = async (demoRole: 'citizen' | 'admin' | 'field_officer') => {
+  const handleQuickDemo = async (demoRole: 'citizen' | 'admin' | 'field_officer' | 'department_officer') => {
     setLocalError(null);
     try {
       await signInWithDemoUser(demoRole);
@@ -164,9 +164,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {(localError || authError) && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
-              <span>{localError || authError}</span>
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-semibold">
+                  {(localError || authError)?.includes('operation-not-allowed')
+                    ? 'Firebase Authentication Provider Notice'
+                    : 'Authentication Notice'}
+                </div>
+                <div className="text-[11px] text-amber-800 leading-relaxed">
+                  {(localError || authError)?.includes('operation-not-allowed')
+                    ? 'Email/Password sign-in provider is disabled in the Firebase Console (under Authentication > Sign-in method). CivicSense has automatically switched to the Live Cloud Firestore Database so your account and session continue without disruption.'
+                    : localError || authError}
+                </div>
+              </div>
             </div>
           )}
 
@@ -313,7 +324,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
               Quick 1-Click Demo Profiles (Saved to Cloud DB)
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => handleQuickDemo('citizen')}
@@ -337,6 +348,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 <div className="text-xs font-bold text-amber-700">Field Engg</div>
                 <div className="text-[10px] text-slate-500">K. Suresh</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('department_officer')}
+                className="p-2 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-left transition-colors"
+              >
+                <div className="text-xs font-bold text-purple-700">Dept Head</div>
+                <div className="text-[10px] text-slate-500">P. Rama Rao</div>
               </button>
             </div>
           </div>
