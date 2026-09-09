@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CivicProvider, useCivic } from './context/CivicContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
 import { CivicHome } from './components/CivicHome';
 import { ReportIssue } from './components/ReportIssue';
@@ -93,7 +94,7 @@ const CivicApp: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         {currentTab === 'home' && (
           <CivicHome
             onNavigate={(tab) => setCurrentTab(tab)}
@@ -243,8 +244,10 @@ const CivicApp: React.FC = () => {
 
 export default function App() {
   return (
-    <CivicProvider>
-      <CivicApp />
-    </CivicProvider>
+    <LanguageProvider>
+      <CivicProvider>
+        <CivicApp />
+      </CivicProvider>
+    </LanguageProvider>
   );
 }

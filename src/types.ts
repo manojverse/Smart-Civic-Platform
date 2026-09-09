@@ -226,6 +226,33 @@ export interface Complaint {
   duplicateStatus?: boolean;
   aiVerifiedAt?: string;
   aiVerification?: AIVerificationResult;
+  photoAnalysis?: PhotoAuthenticityAnalysis;
+}
+
+export type Language = 'en' | 'te' | 'hi';
+
+export type ImageFraudVerdict = 
+  | 'AUTHENTIC_FIELD_CAPTURE' 
+  | 'SUSPECTED_AI_GENERATED' 
+  | 'STOCK_PHOTO_OR_EDITED' 
+  | 'MISMATCHED_IMAGE';
+
+export interface PhotoAuthenticityAnalysis {
+  photoUrl: string;
+  authenticityScore: number; // 0 - 100% (higher = genuine real photo)
+  isAiGenerated: boolean;
+  aiLikelihood: 'LOW' | 'MEDIUM' | 'HIGH' | 'SUSPECTED_AI';
+  tamperRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  imageFraudVerdict: ImageFraudVerdict;
+  detectedCivicFeature: string;
+  detectedFeatureSeverity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  relevanceToCivicIssue: 'RELEVANT_MATCH' | 'PARTIAL_MATCH' | 'MISMATCHED_OR_NON_CIVIC';
+  relevanceExplanation: string;
+  estimatedDimensions?: string;
+  detectedHazards: string[];
+  detectionMarkers: string[];
+  exifIntegrity: 'VERIFIED_VALID' | 'STRIPPED_OR_MISSING' | 'TAMPERED';
+  analyzedAt: string;
 }
 
 export interface AuditLog {

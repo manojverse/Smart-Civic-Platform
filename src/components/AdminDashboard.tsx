@@ -25,10 +25,13 @@ import {
   ChevronRight,
   BarChart3,
   Flame,
-  AlertCircle
+  AlertCircle,
+  FileCheck2,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
+import { useLanguage } from '../context/LanguageContext';
 import { User, AuditLog, Complaint, AIValidity, AIPriority } from '../types';
+import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -45,6 +48,9 @@ export const AdminDashboard: React.FC = () => {
   const [auditSearch, setAuditSearch] = useState('');
 
   // AI Verification & Smart Routing Filters
+  const { t } = useLanguage();
+  const [selectedReportComplaint, setSelectedReportComplaint] = useState<Complaint | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [validityFilter, setValidityFilter] = useState<'all' | AIValidity>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | AIPriority>('all');
@@ -1112,13 +1118,41 @@ export const AdminDashboard: React.FC = () => {
                     <span>Ward: {c.location.ward}</span>
                     <span>•</span>
                     <span>Dept: {c.department}</span>
+                    {c.photoAnalysis && (
+                      <>
+                        <span>•</span>
+                        <span
+                          className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${
+                            c.photoAnalysis.verdict === 'GENUINE_EVIDENCE'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : c.photoAnalysis.verdict === 'AI_GENERATED_DETECTED'
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          Photo: {c.photoAnalysis.verdict.replace(/_/g, ' ')}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedReportComplaint(c);
+                      setIsReportModalOpen(true);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold border border-indigo-200 transition-colors"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5" />
+                    <span>Inspection Dossier</span>
+                  </button>
+
+                  <button
                     onClick={() => setSelectedComplaint(c)}
-                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700"
+                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition-colors"
                   >
                     View Timeline
                   </button>
@@ -1127,6 +1161,18 @@ export const AdminDashboard: React.FC = () => {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Official Municipal Inspection Report Modal */}
+      {selectedReportComplaint && (
+        <OfficialInspectionReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => {
+            setIsReportModalOpen(false);
+            setSelectedReportComplaint(null);
+          }}
+          complaint={selectedReportComplaint}
+        />
       )}
     </div>
   );

@@ -20,10 +20,12 @@ import {
   LogOut,
   Database,
   Compass,
+  Languages,
 } from 'lucide-react';
 import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo, OfficialGovTechHeader } from './Logos';
 import { useCivic } from '../context/CivicContext';
-import { UserRole } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { UserRole, Language } from '../types';
 import { DEMO_USERS } from '../data/seedData';
 
 interface NavbarProps {
@@ -47,6 +49,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
     signOutUser,
   } = useCivic();
 
+  const { language, setLanguage, t } = useLanguage();
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
@@ -58,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
       {/* Official Government of AP & Vizianagaram Municipal Corporation Masthead */}
       <OfficialGovTechHeader />
 
-      {/* Top Notification / Role Switcher Strip */}
+      {/* Top Notification / Language / Role Switcher Strip */}
       <div className="bg-slate-900 text-slate-300 text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -66,12 +70,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             AI Civic Governance • CSE 2026
           </span>
           <span className="hidden sm:inline text-slate-400">
-            Vizianagaram Municipal Corporation • Smart Citizen Redressal & GIS Triage
+            {t.brandSubtitle} • Smart Citizen Redressal & Computer Vision Verification
           </span>
         </div>
 
-        {/* Quick Role Switcher Bar */}
-        <div className="flex items-center gap-2">
+        {/* Right Header Controls: Language Dropdown Box + Quick Role Switcher Bar */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Multilingual Dropdown Selector ("langugesani drop box lo petu") */}
+          <div className="relative inline-flex items-center bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 px-2 py-1 transition-colors shadow-xs" title="Select Language / భాషను ఎంచుకోండి / भाषा चुनें">
+            <Languages className="w-3.5 h-3.5 text-indigo-400 mr-1.5 shrink-0" />
+            <select
+              id="language-select-dropdown"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as Language)}
+              className="bg-transparent text-white text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+              aria-label="Language Selector Dropdown"
+            >
+              <option value="en" className="bg-slate-900 text-white font-medium">English (EN)</option>
+              <option value="te" className="bg-slate-900 text-white font-medium">తెలుగు (Telugu)</option>
+              <option value="hi" className="bg-slate-900 text-white font-medium">हिन्दी (Hindi)</option>
+            </select>
+          </div>
+
           <span className="text-slate-400 text-[11px] hidden md:inline">Demo Persona:</span>
           <div className="relative">
             <button
@@ -158,31 +178,31 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2">
           {/* Official Municipal & Project Logo */}
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentTab('home')}>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0" onClick={() => setCurrentTab('home')}>
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="p-1 rounded-xl bg-slate-50 border border-slate-200 shadow-xs group-hover:border-emerald-400 transition-colors">
-                <VizianagaramCorpLogo className="w-10 h-10 shrink-0" />
+                <VizianagaramCorpLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
               </div>
               <div className="p-1 rounded-xl bg-slate-50 border border-slate-200 shadow-xs hidden sm:block group-hover:border-emerald-400 transition-colors">
-                <ApGovtLogo className="w-10 h-10 shrink-0" />
+                <ApGovtLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
                   CIVICSENSE
                 </span>
-                <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span className="text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
                   VIZIANAGARAM
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 font-semibold flex items-center gap-1.5">
-                <span>విజయనగరం నగరపాలక సంస్థ</span>
+              <p className="text-[10px] sm:text-[11px] text-slate-600 font-semibold flex items-center gap-1">
+                <span>విజయనగరం</span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-500 font-normal">Govt. of Andhra Pradesh</span>
+                <span className="text-slate-500 font-normal truncate max-w-[110px] sm:max-w-none">Govt. of AP</span>
               </p>
             </div>
           </div>
@@ -198,7 +218,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <Home className="w-4 h-4" />
-              <span>Overview</span>
+              <span>{t.navOverview}</span>
             </button>
 
             <button
@@ -210,7 +230,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <PlusCircle className="w-4 h-4 text-emerald-600" />
-              <span>Report Issue</span>
+              <span>{t.navReport}</span>
             </button>
 
             <button
@@ -222,7 +242,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>My Reports</span>
+              <span>{t.navMyReports}</span>
             </button>
 
             <button
@@ -234,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <FileText className="w-4 h-4 text-slate-400" />
-              <span>Complaints</span>
+              <span>{t.navComplaints}</span>
             </button>
 
             <button
@@ -246,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <Compass className="w-4 h-4 text-emerald-600" />
-              <span>Smart Services</span>
+              <span>{t.navServices}</span>
             </button>
 
             <button
@@ -258,7 +278,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <MapPin className="w-4 h-4" />
-              <span>Civic Map</span>
+              <span>{t.navMap}</span>
             </button>
 
             {/* Authority View Links */}
@@ -273,7 +293,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               }`}
             >
               <Building2 className="w-4 h-4 text-blue-600" />
-              <span>Authority Portal</span>
+              <span>{t.navAuthority}</span>
             </button>
 
             <button
@@ -450,69 +470,69 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             {/* Quick Report Button */}
             <button
               onClick={() => setCurrentTab('report')}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm shadow-emerald-600/30 transition-all hover:shadow-md"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow-sm shadow-emerald-600/30 transition-all hover:shadow-md shrink-0"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Report Issue</span>
-              <span className="sm:hidden">Report</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">{t.navReport}</span>
+              <span className="sm:hidden text-[11px] font-bold">Report</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Sub-Navigation Bar */}
-      <div className="lg:hidden border-t border-slate-100 px-3 py-2 flex items-center justify-around text-xs bg-slate-50/90 overflow-x-auto gap-2">
+      {/* Mobile Sub-Navigation Bar (Tablet & Phone with Translations) */}
+      <div className="lg:hidden border-t border-slate-100 px-3 py-2 flex items-center justify-start text-xs bg-slate-50/95 overflow-x-auto gap-2 scrollbar-none">
         <button
           onClick={() => setCurrentTab('home')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'home' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'home' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          Home
+          {t.navOverview}
         </button>
         <button
           onClick={() => setCurrentTab('report')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'report' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'report' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          Report
+          {t.navReport}
         </button>
         <button
           onClick={() => setCurrentTab('my-complaints')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'my-complaints' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'my-complaints' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          My Reports
+          {t.navMyReports}
         </button>
         <button
           onClick={() => setCurrentTab('tracking')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'tracking' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'tracking' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          All Complaints
+          {t.navComplaints}
         </button>
         <button
           onClick={() => setCurrentTab('services')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'services' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'services' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          Services
+          {t.navServices}
         </button>
         <button
           onClick={() => setCurrentTab('map')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'map' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'map' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          Map
+          {t.navMap}
         </button>
         <button
           onClick={() => setCurrentTab('authority')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'authority' ? 'font-bold text-blue-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'authority' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          Authority
+          {t.navAuthority}
         </button>
         <button
           onClick={() => setCurrentTab('departments')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'departments' ? 'font-bold text-blue-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'departments' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
           Staff & Depts
         </button>
         <button
           onClick={() => setCurrentTab('users-db')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap flex items-center gap-1 ${currentTab === 'users-db' ? 'font-bold text-purple-700 bg-purple-50' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap flex items-center gap-1 transition-colors ${currentTab === 'users-db' ? 'font-bold text-purple-700 bg-purple-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <span>User Database</span>
           <span className="text-[10px] px-1 bg-purple-100 text-purple-800 rounded-full font-bold">
@@ -521,7 +541,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
         </button>
         <button
           onClick={() => setCurrentTab('analytics')}
-          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'analytics' ? 'font-bold text-purple-700' : 'text-slate-600'}`}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'analytics' ? 'font-bold text-purple-700 bg-purple-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
           Analytics
         </button>

@@ -141,7 +141,7 @@ export const CivicSenseAI: React.FC<CivicSenseAIProps> = ({ onNavigate }) => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-8 right-6 z-40 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 border-2 border-white/20 group"
+          className="fixed bottom-20 md:bottom-8 right-4 sm:right-6 z-40 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 border-2 border-white/20 group"
           title="CivicSense Municipal AI Assistant"
         >
           <div className="relative">
@@ -154,7 +154,7 @@ export const CivicSenseAI: React.FC<CivicSenseAIProps> = ({ onNavigate }) => {
 
       {/* Expandable Chat Drawer */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-8 right-4 md:right-6 z-50 w-[92vw] sm:w-[420px] h-[550px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-200">
+        <div className="fixed bottom-20 md:bottom-8 right-3 sm:right-6 z-50 w-[calc(100vw-24px)] sm:w-[420px] max-h-[calc(100dvh-100px)] h-[540px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-200">
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 text-white flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2.5">

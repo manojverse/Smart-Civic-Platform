@@ -19,6 +19,7 @@ import {
   VerificationDetails,
   ComplaintCategory,
   AIVerificationResult,
+  PhotoAuthenticityAnalysis,
 } from '../types';
 import {
   INITIAL_COMPLAINTS,
@@ -104,6 +105,7 @@ interface CivicContextType {
     photos: string[];
     aiResult?: AIClassificationResult;
     verificationResult?: AIVerificationResult;
+    photoAnalysis?: PhotoAuthenticityAnalysis;
   }) => Promise<Complaint>;
 
   updateComplaintStatus: (
@@ -716,6 +718,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     photos: string[];
     aiResult?: AIClassificationResult;
     verificationResult?: AIVerificationResult;
+    photoAnalysis?: PhotoAuthenticityAnalysis;
   }): Promise<Complaint> => {
     let ai = data.aiResult;
     const vr = data.verificationResult;
@@ -864,6 +867,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       duplicateStatus: vr?.duplicate || false,
       aiVerifiedAt: nowIso,
       aiVerification: vr,
+      photoAnalysis: data.photoAnalysis,
     };
 
     if (assignedOfficer && bestMatch) {

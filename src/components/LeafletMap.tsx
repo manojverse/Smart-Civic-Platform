@@ -238,7 +238,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       {/* Map Helper overlay in picker mode */}
       {isPicker && (
         <div className="absolute top-3 right-3 z-[400] bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 shadow-md flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Click on map or drag pin to adjust location</span>
         </div>
       )}

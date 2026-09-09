@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo } from './Logos';
 import { useCivic } from '../context/CivicContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Complaint } from '../types';
 
 interface CivicHomeProps {
@@ -27,6 +28,7 @@ interface CivicHomeProps {
 
 export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectComplaint }) => {
   const { complaints, currentUser } = useCivic();
+  const { t } = useLanguage();
 
   const total = complaints.length;
   const resolved = complaints.filter((c) => c.status === 'Resolved' || c.status === 'Closed').length;
@@ -36,14 +38,14 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
   const recentComplaints = complaints.slice(0, 4);
 
   return (
-    <div className="space-y-12 pb-16">
+    <div className="space-y-8 sm:space-y-12 pb-16">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-10 sm:py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/30 via-transparent to-transparent"></div>
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
             {/* Left Col: Headings & CTAs */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-5 sm:space-y-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
@@ -54,43 +56,41 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                Smart Civic Care. <br />
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                {t.heroTitle.split('.')[0]}. <br />
                 <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-                  Intelligent Resolution.
+                  {t.heroTitle.split('.')[1] || 'Intelligent Resolution'}
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-                Official grievance redressal portal connecting citizens of Vizianagaram with municipal engineers.
-                Equipped with Gemini AI hazard triage, GPS geotagged verification, 400m duplicate detection,
-                and real-time field crew dispatch.
+              <p className="text-sm sm:text-base lg:text-lg text-slate-300 leading-relaxed">
+                {t.heroSubtitle}
               </p>
 
               {/* Main Action CTAs */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => onNavigate('report')}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                  <PlusCircle className="w-5 h-5" />
-                  <span>Report Civic Defect</span>
+                  <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>{t.heroReportCta}</span>
                 </button>
 
                 <button
                   onClick={() => onNavigate('tracking')}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm px-5 py-3.5 rounded-xl border border-slate-700 transition-colors"
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl border border-slate-700 transition-colors"
                 >
                   <Clock className="w-4 h-4 text-emerald-400" />
-                  <span>Track Status</span>
+                  <span>{t.heroTrackCta}</span>
                 </button>
 
                 <button
                   onClick={() => onNavigate('map')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-white font-medium text-sm px-4 py-3.5 rounded-xl transition-colors hover:bg-white/5"
+                  className="flex items-center gap-2 text-slate-300 hover:text-white font-medium text-xs sm:text-sm px-3.5 py-3 sm:py-3.5 rounded-xl transition-colors hover:bg-white/5"
                 >
                   <MapPin className="w-4 h-4 text-emerald-400" />
-                  <span>Vizianagaram Ward Map</span>
+                  <span>{t.navMap}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
@@ -161,30 +161,30 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
       </section>
 
       {/* Real-time Civic Metrics Bar */}
-      <section className="max-w-6xl mx-auto px-4 -mt-10 relative z-20">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xl shadow-slate-900/5 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="border-r border-slate-100 last:border-none pr-4">
-            <span className="text-xs font-semibold text-slate-400">Total Registered</span>
-            <div className="text-3xl font-extrabold text-slate-900 mt-1">{total}</div>
-            <span className="text-[11px] text-emerald-600 font-medium">100% Digital Audit Trail</span>
+      <section className="max-w-6xl mx-auto px-4 -mt-8 sm:-mt-10 relative z-20">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xl shadow-slate-900/5 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="border-r border-slate-100 last:border-none pr-3 sm:pr-4">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400">{t.totalComplaints}</span>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">{total}</div>
+            <span className="text-[10px] sm:text-[11px] text-emerald-600 font-medium">100% Digital Trail</span>
           </div>
 
-          <div className="border-r border-slate-100 last:border-none pr-4">
-            <span className="text-xs font-semibold text-slate-400">Resolved & Verified</span>
-            <div className="text-3xl font-extrabold text-emerald-700 mt-1">{resolved}</div>
-            <span className="text-[11px] text-slate-500">Photographic proof attached</span>
+          <div className="border-r border-slate-100 last:border-none pr-3 sm:pr-4">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400">{t.resolved}</span>
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">{resolved}</div>
+            <span className="text-[10px] sm:text-[11px] text-slate-500">Verified photos</span>
           </div>
 
-          <div className="border-r border-slate-100 last:border-none pr-4">
-            <span className="text-xs font-semibold text-slate-400">In Active Field Repair</span>
-            <div className="text-3xl font-extrabold text-orange-600 mt-1">{inProgress}</div>
-            <span className="text-[11px] text-slate-500">Assigned to engineers</span>
+          <div className="border-r border-slate-100 last:border-none pr-3 sm:pr-4">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400">{t.inProgress}</span>
+            <div className="text-2xl sm:text-3xl font-extrabold text-orange-600 mt-1">{inProgress}</div>
+            <span className="text-[10px] sm:text-[11px] text-slate-500">Field engineers</span>
           </div>
 
           <div>
-            <span className="text-xs font-semibold text-slate-400">Target Resolution SLA</span>
-            <div className="text-3xl font-extrabold text-blue-700 mt-1">&lt; 24h</div>
-            <span className="text-[11px] text-slate-500">Critical pothole & water alerts</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400">{t.slaHours}</span>
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 mt-1">&lt; 24h</div>
+            <span className="text-[10px] sm:text-[11px] text-slate-500">Priority triage</span>
           </div>
         </div>
       </section>
@@ -250,15 +250,15 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
       <section className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Recent Community Issues</h2>
-            <p className="text-xs text-slate-500">Live feed of civic issues logged across the city</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">{t.recentIssues}</h2>
+            <p className="text-xs text-slate-500">Live feed of civic issues logged across Vizianagaram</p>
           </div>
 
           <button
             onClick={() => onNavigate('tracking')}
             className="text-xs text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
           >
-            <span>View All ({complaints.length})</span>
+            <span>{t.viewAll} ({complaints.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

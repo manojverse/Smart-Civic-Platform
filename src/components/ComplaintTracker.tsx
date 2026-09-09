@@ -17,9 +17,15 @@ import {
   ExternalLink,
   MessageSquare,
   Sparkles,
+  FileCheck2,
+  ShieldCheck,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
-import { Complaint, ComplaintStatus, CitizenFeedback } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { Complaint, ComplaintStatus, CitizenFeedback, PhotoAuthenticityAnalysis } from '../types';
+import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
+import { analyzePhotoAuthenticity } from '../services/imageAuthenticityService';
 
 const LIFECYCLE_STEPS: ComplaintStatus[] = [
   'Submitted',
@@ -43,6 +49,11 @@ export const ComplaintTracker: React.FC = () => {
     recordComplaintVisit,
   } = useCivic();
 
+  const { t } = useLanguage();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [localPhotoAnalysis, setLocalPhotoAnalysis] = useState<PhotoAuthenticityAnalysis | null>(null);
+  const [isAuditingPhoto, setIsAuditingPhoto] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
@@ -65,7 +76,12 @@ export const ComplaintTracker: React.FC = () => {
     if (activeComplaint?.id && recordComplaintVisit) {
       recordComplaintVisit(activeComplaint.id);
     }
-  }, [activeComplaint?.id]);
+    if (activeComplaint?.photoAnalysis) {
+      setLocalPhotoAnalysis(activeComplaint.photoAnalysis);
+    } else {
+      setLocalPhotoAnalysis(null);
+    }
+  }, [activeComplaint?.id, activeComplaint?.photoAnalysis]);
 
   // Filter complaints list
   const filteredComplaints = complaints.filter((comp) => {
@@ -267,8 +283,18 @@ export const ComplaintTracker: React.FC = () => {
                     </h2>
                   </div>
 
-                  {/* Upvote & Support Action */}
-                  <div className="flex items-center gap-2">
+                  {/* Upvote & Official Inspection Dossier Actions */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsReportModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all"
+                      title="View official municipal inspection report and forensic audit dossier"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5 text-indigo-200" />
+                      <span>{t.viewOfficialReportBtn}</span>
+                    </button>
+
                     <button
                       onClick={() => upvoteComplaint(activeComplaint.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
@@ -411,6 +437,75 @@ export const ComplaintTracker: React.FC = () => {
                           </span>
                         </a>
                       ))}
+                    </div>
+
+                    {/* Photo Authenticity & Fake AI Forensic Audit Panel */}
+                    <div className="mt-3 p-3 bg-slate-900 text-slate-200 rounded-xl border border-slate-700 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-300">
+                          <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                          <span>Computer Vision & Fake Photo Analysis</span>
+                        </div>
+
+                        {(localPhotoAnalysis || activeComplaint.photoAnalysis) && (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              (localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict === 'GENUINE_EVIDENCE'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : (localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict === 'AI_GENERATED_DETECTED'
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}
+                          >
+                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+
+                      {(localPhotoAnalysis || activeComplaint.photoAnalysis) ? (
+                        <div className="mt-2 space-y-1.5">
+                          <p className="text-[11px] text-slate-300">
+                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.explanation}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800">
+                            <span>AI Probability: {(((localPhotoAnalysis || activeComplaint.photoAnalysis)?.aiGeneratedProbability ?? 0) * 100).toFixed(0)}%</span>
+                            <span>•</span>
+                            <span>Authenticity Score: {(((localPhotoAnalysis || activeComplaint.photoAnalysis)?.authenticityScore ?? 0) * 100).toFixed(0)}%</span>
+                            <span>•</span>
+                            <span>Category Match: {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.matchesReportedCategory ? 'VERIFIED' : 'MISMATCH'}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] text-slate-400">
+                            Perform forensic computer vision scan to detect deepfakes, synthetic AI generation, or photo mismatches.
+                          </span>
+                          <button
+                            type="button"
+                            disabled={isAuditingPhoto}
+                            onClick={async () => {
+                              if (!activeComplaint.photos?.[0]) return;
+                              setIsAuditingPhoto(true);
+                              try {
+                                const res = await analyzePhotoAuthenticity({
+                                  photoUrl: activeComplaint.photos[0],
+                                  reportedCategory: activeComplaint.category,
+                                  reportedTitle: activeComplaint.title,
+                                  reportedDescription: activeComplaint.description,
+                                });
+                                setLocalPhotoAnalysis(res);
+                              } catch (e) {
+                                console.error('Photo scan error:', e);
+                              } finally {
+                                setIsAuditingPhoto(false);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                          >
+                            {isAuditingPhoto ? 'Auditing Photo...' : 'Scan Photo with AI'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -807,6 +902,13 @@ export const ComplaintTracker: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Official Municipal Inspection & Verification Dossier Modal */}
+      <OfficialInspectionReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        complaint={activeComplaint}
+      />
     </div>
   );
 };

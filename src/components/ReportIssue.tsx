@@ -16,15 +16,22 @@ import {
   Printer,
   ChevronRight,
   RefreshCw,
+  FileCheck2,
+  ShieldCheck,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { LeafletMap } from './LeafletMap';
 import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
 import { useCivic } from '../context/CivicContext';
-import { ComplaintCategory, Severity, AIClassificationResult, Complaint, AIVerificationResult } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { ComplaintCategory, Severity, AIClassificationResult, Complaint, AIVerificationResult, PhotoAuthenticityAnalysis } from '../types';
 import { WARDS } from '../data/seedData';
 import { classifyComplaint, findPotentialDuplicates, DuplicateMatch } from '../services/aiClassifier';
 import { verifyComplaint, OFFICIAL_TEST_CASES } from '../services/aiVerificationService';
+import { analyzePhotoAuthenticity } from '../services/imageAuthenticityService';
 import { AIVerificationCard } from './AIVerificationCard';
+import { PhotoAuthenticityCard } from './PhotoAuthenticityCard';
+import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
 
 const CATEGORIES: { name: ComplaintCategory; icon: string; desc: string }[] = [
   { name: 'Pothole', icon: '🕳️', desc: 'Road craters, dips & damaged tarmac' },
@@ -47,6 +54,7 @@ interface ReportIssueProps {
 
 export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) => {
   const { createComplaint, complaints, upvoteComplaint } = useCivic();
+  const { t, language } = useLanguage();
 
   // Form State
   const [category, setCategory] = useState<ComplaintCategory>('Pothole');
@@ -74,6 +82,14 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
   const [verificationResult, setVerificationResult] = useState<AIVerificationResult | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
+
+  // Photo Authenticity & Synthetic AI Detection State
+  const [photoAnalysis, setPhotoAnalysis] = useState<PhotoAuthenticityAnalysis | null>(null);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+
+  // Inspection Dossier Report Modal State
+  const [isInspectionReportOpen, setIsInspectionReportOpen] = useState(false);
+  const [inspectionTargetComplaint, setInspectionTargetComplaint] = useState<Complaint | null>(null);
 
   // Submission / Receipt State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,7 +135,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
     );
   };
 
-  // Image Upload handler (supports base64 conversion & multi-image)
+  // Image Upload handler (supports base64 conversion & automatic forensic AI photo analysis)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -131,9 +147,26 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
       }
 
       const reader = new FileReader();
-      reader.onload = (loadEvt) => {
+      reader.onload = async (loadEvt) => {
         if (loadEvt.target?.result) {
-          setPhotos((prev) => [...prev, loadEvt.target!.result as string]);
+          const base64Data = loadEvt.target.result as string;
+          setPhotos((prev) => [...prev, base64Data]);
+
+          // Trigger forensic AI analysis immediately
+          setIsAnalyzingPhoto(true);
+          try {
+            const analysis = await analyzePhotoAuthenticity({
+              photoUrl: base64Data,
+              reportedCategory: category,
+              reportedTitle: title,
+              reportedDescription: description,
+            });
+            setPhotoAnalysis(analysis);
+          } catch (err) {
+            console.error('Error analyzing photo authenticity:', err);
+          } finally {
+            setIsAnalyzingPhoto(false);
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -366,9 +399,11 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
         photos: photos.length > 0 ? photos : [SAMPLE_EVIDENCE_PHOTOS[0]],
         aiResult: aiResult || undefined,
         verificationResult: vr || undefined,
+        photoAnalysis: photoAnalysis || undefined,
       });
 
       setSubmittedComplaint(created);
+      setInspectionTargetComplaint(created);
     } catch (err) {
       console.error('Submission error:', err);
       alert('Error submitting complaint. Please try again.');
@@ -774,13 +809,55 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
                   <span>💡 Tip: Photographic evidence speeds up municipal inspection by 3.5x</span>
                   <button
                     type="button"
-                    onClick={() => setPhotos([SAMPLE_EVIDENCE_PHOTOS[0]])}
+                    onClick={async () => {
+                      const sampleUrl = SAMPLE_EVIDENCE_PHOTOS[0];
+                      setPhotos([sampleUrl]);
+                      setIsAnalyzingPhoto(true);
+                      try {
+                        const analysis = await analyzePhotoAuthenticity({
+                          photoUrl: sampleUrl,
+                          reportedCategory: category,
+                          reportedTitle: title || 'Pothole on Main Road',
+                          reportedDescription: description,
+                        });
+                        setPhotoAnalysis(analysis);
+                      } catch (err) {
+                        console.error('Error analyzing sample photo:', err);
+                      } finally {
+                        setIsAnalyzingPhoto(false);
+                      }
+                    }}
                     className="text-emerald-600 hover:underline font-medium"
                   >
-                    Attach Sample Pothole Photo
+                    Attach Real Pothole Photo
                   </button>
                 </div>
               )}
+
+              {/* AI Image Fraud & Fake Detection Card */}
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <PhotoAuthenticityCard
+                  analysis={photoAnalysis}
+                  isAnalyzing={isAnalyzingPhoto}
+                  onTestPreset={async (preset) => {
+                    setPhotos([preset.photoUrl]);
+                    setIsAnalyzingPhoto(true);
+                    try {
+                      const analysis = await analyzePhotoAuthenticity({
+                        photoUrl: preset.photoUrl,
+                        reportedCategory: category,
+                        reportedTitle: title || preset.label,
+                        reportedDescription: description,
+                      });
+                      setPhotoAnalysis(analysis);
+                    } catch (err) {
+                      console.error('Preset analysis failed:', err);
+                    } finally {
+                      setIsAnalyzingPhoto(false);
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -1113,31 +1190,52 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Receipt</span>
-              </button>
-
+            <div className="space-y-2.5">
               <button
                 type="button"
                 onClick={() => {
-                  onTrackComplaint(submittedComplaint);
-                  setSubmittedComplaint(null);
+                  setInspectionTargetComplaint(submittedComplaint);
+                  setIsInspectionReportOpen(true);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/20"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
               >
-                <span>Track Complaint Now</span>
-                <ChevronRight className="w-4 h-4" />
+                <FileCheck2 className="w-4 h-4 text-indigo-200" />
+                <span>{t.viewOfficialReportBtn}</span>
               </button>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Receipt</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onTrackComplaint(submittedComplaint);
+                    setSubmittedComplaint(null);
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/20"
+                >
+                  <span>Track Complaint Now</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Official Municipal Inspection & Verification Dossier Modal */}
+      <OfficialInspectionReportModal
+        isOpen={isInspectionReportOpen}
+        onClose={() => setIsInspectionReportOpen(false)}
+        complaint={inspectionTargetComplaint || submittedComplaint}
+      />
     </div>
   );
 };
