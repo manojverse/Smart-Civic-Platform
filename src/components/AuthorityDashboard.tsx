@@ -33,6 +33,9 @@ import {
 import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
 import { DEPARTMENTS, FIELD_OFFICERS, WARDS } from '../data/seedData';
 import { UserDatabaseView } from './UserDatabaseView';
+import { WorkerDashboard } from './WorkerDashboard';
+import { HigherOfficialDashboard } from './HigherOfficialDashboard';
+import { AdminDashboard } from './AdminDashboard';
 
 export const AuthorityDashboard: React.FC = () => {
   const {
@@ -46,8 +49,15 @@ export const AuthorityDashboard: React.FC = () => {
     registeredUsers,
   } = useCivic();
 
-  // Dashboard Subtab (Complaints Triage vs Real-time User Database)
-  const [dashboardTab, setDashboardTab] = useState<'complaints' | 'users'>('complaints');
+  const getDefaultTab = (): 'complaints' | 'worker' | 'higher_official' | 'admin' | 'users' => {
+    if (currentUser.role === 'worker') return 'worker';
+    if (currentUser.role === 'higher_official') return 'higher_official';
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') return 'admin';
+    return 'complaints';
+  };
+
+  // Dashboard Subtab (Triage, Worker, Higher Official, Admin Governance, User DB)
+  const [dashboardTab, setDashboardTab] = useState<'complaints' | 'worker' | 'higher_official' | 'admin' | 'users'>(getDefaultTab());
 
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -190,47 +200,85 @@ export const AuthorityDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Subtab Navigation (Grievances vs User Database) */}
+      {/* Subtab Navigation (Grievances vs Field Worker vs High Official vs Admin vs User Database) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setDashboardTab('complaints')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               dashboardTab === 'complaints'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            <FileCheck className="w-4 h-4" />
-            <span>Grievance Triage & SLAs ({totalCount})</span>
+            <FileCheck className="w-3.5 h-3.5" />
+            <span>Triage & SLAs ({totalCount})</span>
           </button>
+
+          <button
+            onClick={() => setDashboardTab('worker')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              dashboardTab === 'worker'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-amber-50/70 text-amber-700 hover:bg-amber-100 border border-amber-200'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 text-amber-600" />
+            <span>Field Worker Portal</span>
+          </button>
+
+          <button
+            onClick={() => setDashboardTab('higher_official')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              dashboardTab === 'higher_official'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Higher Official Review</span>
+          </button>
+
+          <button
+            onClick={() => setDashboardTab('admin')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              dashboardTab === 'admin'
+                ? 'bg-emerald-700 text-white shadow-sm'
+                : 'bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Admin Governance</span>
+          </button>
+
           <button
             onClick={() => setDashboardTab('users')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               dashboardTab === 'users'
                 ? 'bg-purple-700 text-white shadow-sm'
                 : 'bg-purple-50/70 text-purple-700 hover:bg-purple-100 border border-purple-200'
             }`}
           >
-            <Database className="w-4 h-4 text-purple-600" />
-            <span>Real-Time User Database ({registeredUsers.length})</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <Database className="w-3.5 h-3.5 text-purple-600" />
+            <span>User DB ({registeredUsers.length})</span>
           </button>
         </div>
 
         <div className="flex items-center gap-3 px-3 py-1 text-xs text-slate-600">
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>{registeredUsers.filter((u) => u.isOnline).length} Active Online Users</span>
-          </span>
-          <span className="text-slate-300">|</span>
-          <span className="text-slate-500 text-[11px]">
-            {registeredUsers.filter((u) => u.lastVisitedComplaintId).length} viewing complaints
+            <span>{registeredUsers.filter((u) => u.isOnline).length} Online</span>
           </span>
         </div>
       </div>
 
-      {dashboardTab === 'users' ? (
+      {dashboardTab === 'worker' ? (
+        <WorkerDashboard />
+      ) : dashboardTab === 'higher_official' ? (
+        <HigherOfficialDashboard />
+      ) : dashboardTab === 'admin' ? (
+        <AdminDashboard />
+      ) : dashboardTab === 'users' ? (
         <UserDatabaseView
           onSelectComplaint={(comp) => {
             setActiveModalComplaint(comp);

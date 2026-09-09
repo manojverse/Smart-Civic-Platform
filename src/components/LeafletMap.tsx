@@ -22,7 +22,10 @@ const STATUS_COLORS: Record<ComplaintStatus, string> = {
   'Under Review': '#6366f1', // indigo
   Verified: '#8b5cf6', // purple
   Assigned: '#f59e0b', // amber
+  Accepted: '#06b6d4', // cyan
   'In Progress': '#f97316', // orange
+  'Work Completed': '#8b5cf6', // purple
+  'Pending Verification': '#eab308', // yellow
   Resolved: '#10b981', // emerald green
   Closed: '#64748b', // slate
   Rejected: '#ef4444', // red

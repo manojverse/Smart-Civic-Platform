@@ -86,7 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleQuickDemo = async (demoRole: 'citizen' | 'admin' | 'field_officer' | 'department_officer') => {
+  const handleQuickDemo = async (demoRole: UserRole) => {
     setLocalError(null);
     try {
       await signInWithDemoUser(demoRole);
@@ -220,10 +220,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => setRole(e.target.value as UserRole)}
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   >
-                    <option value="citizen">Citizen</option>
-                    <option value="field_officer">Field Engineer</option>
-                    <option value="department_officer">Dept. Officer</option>
-                    <option value="admin">Municipal Admin</option>
+                    <option value="citizen">Citizen (Paurudu)</option>
+                    <option value="worker">Field Worker / Technician</option>
+                    <option value="higher_official">Higher Official (Verification Authority)</option>
+                    <option value="field_officer">Field Engineer / Inspector</option>
+                    <option value="department_officer">Dept. Head Officer</option>
+                    <option value="admin">Municipal Commissioner / Admin</option>
                   </select>
                 </div>
 
@@ -335,27 +337,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => handleQuickDemo('worker')}
+                className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-left transition-colors"
+              >
+                <div className="text-xs font-bold text-amber-700">Field Worker</div>
+                <div className="text-[10px] text-slate-500">Venkata Ramana</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('higher_official')}
+                className="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-left transition-colors"
+              >
+                <div className="text-xs font-bold text-indigo-700">Higher Official</div>
+                <div className="text-[10px] text-slate-500">Dr. M. K. Varma</div>
+              </button>
+              <button
+                type="button"
                 onClick={() => handleQuickDemo('admin')}
                 className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-left transition-colors"
               >
                 <div className="text-xs font-bold text-blue-700">Admin</div>
                 <div className="text-[10px] text-slate-500">Commissioner</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('field_officer')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-amber-700">Field Engg</div>
-                <div className="text-[10px] text-slate-500">K. Suresh</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('department_officer')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-purple-700">Dept Head</div>
-                <div className="text-[10px] text-slate-500">P. Rama Rao</div>
               </button>
             </div>
           </div>

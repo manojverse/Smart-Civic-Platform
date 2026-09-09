@@ -1,6 +1,8 @@
 export type UserRole = 
   | 'citizen' 
+  | 'worker'
   | 'field_officer' 
+  | 'higher_official'
   | 'department_officer' 
   | 'admin' 
   | 'super_admin';
@@ -17,6 +19,7 @@ export type ComplaintCategory =
   | 'Public Property Damage'
   | 'Park Issue'
   | 'Sanitation'
+  | 'Public Toilet'
   | 'Other';
 
 export type ComplaintStatus =
@@ -24,7 +27,10 @@ export type ComplaintStatus =
   | 'Under Review'
   | 'Verified'
   | 'Assigned'
+  | 'Accepted'
   | 'In Progress'
+  | 'Work Completed'
+  | 'Pending Verification'
   | 'Resolved'
   | 'Closed'
   | 'Rejected'
@@ -54,6 +60,10 @@ export interface User {
   ward?: string;
   department?: MunicipalDepartment;
   avatar?: string;
+  employeeId?: string;
+  designation?: string;
+  workArea?: string;
+  approvalStatus?: 'approved' | 'pending' | 'rejected';
   createdAt?: string;
   lastLoginAt?: string;
   loginCount?: number;
@@ -86,6 +96,26 @@ export interface CitizenFeedback {
   timelinessSatisfaction: 'very_satisfied' | 'satisfied' | 'neutral' | 'dissatisfied';
 }
 
+export type AIValidity = 'VALID' | 'INVALID' | 'NEEDS_REVIEW';
+export type AIPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type AILocationStatus = 'PROVIDED' | 'MISSING' | 'UNCLEAR';
+
+export interface AIVerificationResult {
+  validity: AIValidity;
+  confidence: number;
+  category: string;
+  subcategory: string;
+  priority: AIPriority;
+  location: string;
+  location_status: AILocationStatus;
+  reason: string;
+  recommended_department: string;
+  recommended_action: string;
+  duplicate: boolean;
+  duplicate_complaint_id?: string;
+  duplicate_summary?: string;
+}
+
 export interface AIClassificationResult {
   category: ComplaintCategory;
   subcategory: string;
@@ -113,10 +143,32 @@ export interface AssignedOfficer {
   phone: string;
   badgeNumber: string;
   department: MunicipalDepartment;
+  distanceKm?: number;
+  assignmentScore?: number;
+}
+
+export interface WorkerProof {
+  beforePhoto?: string;
+  beforePhotoTimestamp?: string;
+  afterPhoto?: string;
+  afterPhotoTimestamp?: string;
+  completionNotes?: string;
+  completedAt?: string;
+  workerId?: string;
+  workerName?: string;
+  locationVerified?: boolean;
+}
+
+export interface VerificationDetails {
+  verifiedBy: string;
+  verifiedAt: string;
+  officialNotes?: string;
+  decision: 'approved' | 'rejected';
+  rejectionReason?: string;
 }
 
 export interface Complaint {
-  id: string; // e.g. CIVIC-2026-8812
+  id: string; // e.g. CS-VZM-2026-000101
   title: string;
   description: string;
   category: ComplaintCategory;
@@ -134,6 +186,8 @@ export interface Complaint {
   };
   department?: MunicipalDepartment;
   assignedOfficer?: AssignedOfficer;
+  workerProof?: WorkerProof;
+  verificationDetails?: VerificationDetails;
   internalNotes?: {
     id: string;
     author: string;
@@ -158,6 +212,62 @@ export interface Complaint {
   timeline: StatusHistoryItem[];
   aiAnalysis?: AIClassificationResult;
   feedback?: CitizenFeedback;
+  // AI Verification & Smart Routing Fields
+  aiValidity?: AIValidity;
+  aiConfidence?: number;
+  aiCategory?: string;
+  aiSubcategory?: string;
+  aiPriority?: AIPriority;
+  aiLocation?: string;
+  aiLocationStatus?: AILocationStatus;
+  aiReason?: string;
+  recommendedDepartment?: string;
+  recommendedAction?: string;
+  duplicateStatus?: boolean;
+  aiVerifiedAt?: string;
+  aiVerification?: AIVerificationResult;
+}
+
+export interface AuditLog {
+  id: string;
+  complaintId?: string;
+  user: string;
+  role: UserRole;
+  action: string;
+  details: string;
+  timestamp: string;
+}
+
+export interface SmartServiceItem {
+  id: string;
+  name: string;
+  category: 
+    | 'Water Services'
+    | 'Waste Management'
+    | 'Roads & Infrastructure'
+    | 'Streetlights'
+    | 'Sanitation'
+    | 'Public Facilities'
+    | 'Emergency Services'
+    | 'Municipal Services';
+  address: string;
+  phone: string;
+  lat: number;
+  lng: number;
+  timings?: string;
+  emergencyContact?: boolean;
+  description: string;
+}
+
+export interface MunicipalAnnouncement {
+  id: string;
+  title: string;
+  message: string;
+  department: string;
+  priority: 'low' | 'normal' | 'urgent';
+  timestamp: string;
+  actionLabel?: string;
+  actionTab?: string;
 }
 
 export interface CivicNotification {

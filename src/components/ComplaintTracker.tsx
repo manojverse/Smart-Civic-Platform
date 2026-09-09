@@ -23,10 +23,10 @@ import { Complaint, ComplaintStatus, CitizenFeedback } from '../types';
 
 const LIFECYCLE_STEPS: ComplaintStatus[] = [
   'Submitted',
-  'Under Review',
   'Verified',
   'Assigned',
   'In Progress',
+  'Work Completed',
   'Resolved',
   'Closed',
 ];
@@ -415,24 +415,159 @@ export const ComplaintTracker: React.FC = () => {
                   </div>
                 )}
 
-                {/* AI Triage Summary Box */}
-                {activeComplaint.aiAnalysis && (
-                  <div className="bg-emerald-950 text-emerald-100 rounded-xl p-4 text-xs space-y-2 border border-emerald-800">
+                {/* AI Verification & Smart Routing Report Box */}
+                {(activeComplaint.aiValidity || activeComplaint.aiAnalysis) && (
+                  <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white rounded-xl p-4 text-xs space-y-3 border border-indigo-500/30 shadow-md">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-300">
-                        <Sparkles className="w-4 h-4 text-emerald-400" />
-                        <span>CivicSense AI Triage Report</span>
+                      <div className="flex items-center gap-1.5 font-bold text-indigo-300">
+                        <Sparkles className="w-4 h-4 text-indigo-400" />
+                        <span>AI Complaint Verification & Smart Routing</span>
                       </div>
-                      <span className="text-[10px] bg-emerald-800/60 px-2 py-0.5 rounded text-emerald-300">
-                        {activeComplaint.aiAnalysis.confidence}% Confidence
+                      <div className="flex items-center gap-2">
+                        {activeComplaint.aiValidity && (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              activeComplaint.aiValidity === 'VALID'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : activeComplaint.aiValidity === 'INVALID'
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}
+                          >
+                            {activeComplaint.aiValidity}
+                          </span>
+                        )}
+                        <span className="text-[10px] bg-indigo-900/60 border border-indigo-700/50 px-2 py-0.5 rounded text-indigo-200 font-mono">
+                          {activeComplaint.aiConfidence || activeComplaint.aiAnalysis?.confidence || 94}% Confidence
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                        <span className="text-[10px] text-slate-400 block">AI Category</span>
+                        <span className="font-semibold text-slate-200 truncate block">
+                          {activeComplaint.aiCategory || activeComplaint.category}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                        <span className="text-[10px] text-slate-400 block">AI Priority</span>
+                        <span className="font-semibold text-slate-200 block">
+                          {activeComplaint.aiPriority || activeComplaint.priority}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                        <span className="text-[10px] text-slate-400 block">Location Status</span>
+                        <span className="font-semibold text-slate-200 block">
+                          {activeComplaint.locationStatus || 'PROVIDED'}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                        <span className="text-[10px] text-slate-400 block">Smart Routing</span>
+                        <span className="font-semibold text-indigo-300 truncate block">
+                          {activeComplaint.recommendedDepartment || activeComplaint.department}
+                        </span>
+                      </div>
+                    </div>
+
+                    {activeComplaint.aiReason && (
+                      <p className="text-[11px] text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-lg border border-white/5">
+                        <strong className="text-indigo-200">Verification Rationale:</strong> {activeComplaint.aiReason}
+                      </p>
+                    )}
+
+                    {activeComplaint.recommendedAction && (
+                      <p className="text-[11px] text-emerald-200/90 leading-relaxed bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/40">
+                        <strong className="text-emerald-300">Recommended Action:</strong> {activeComplaint.recommendedAction}
+                      </p>
+                    )}
+
+                    {activeComplaint.duplicateStatus && (
+                      <div className="text-[11px] text-purple-200 bg-purple-950/50 p-2.5 rounded-lg border border-purple-800/40">
+                        <strong className="text-purple-300">Duplicate Notice:</strong> {activeComplaint.duplicateSummary || 'Similar complaint already logged in this ward.'}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Field Worker Completion Proof (Before & After) */}
+                {activeComplaint.workerProof && (
+                  <div className="bg-amber-50/70 rounded-xl p-4 border border-amber-200 text-xs space-y-3">
+                    <div className="flex items-center justify-between text-amber-900 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                        <span>Field Worker Execution Proof</span>
+                      </span>
+                      {activeComplaint.workerProof.completedAt && (
+                        <span className="text-[10px] text-amber-700 font-normal">
+                          Submitted on {new Date(activeComplaint.workerProof.completedAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {activeComplaint.workerProof.completionNotes && (
+                      <p className="text-slate-700 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-amber-200">
+                        {activeComplaint.workerProof.completionNotes}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {activeComplaint.workerProof.beforePhoto && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Before Work Started
+                          </span>
+                          <img
+                            src={activeComplaint.workerProof.beforePhoto}
+                            alt="Before repair"
+                            className="w-full h-32 object-cover rounded-lg border border-amber-200 shadow-xs"
+                          />
+                        </div>
+                      )}
+                      {activeComplaint.workerProof.afterPhoto && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                            After Work Completed (Worker Proof)
+                          </span>
+                          <img
+                            src={activeComplaint.workerProof.afterPhoto}
+                            alt="After repair proof"
+                            className="w-full h-32 object-cover rounded-lg border border-emerald-300 shadow-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 pt-1">
+                      Field Worker: <strong>{activeComplaint.workerProof.workerName || 'Assigned Technician'}</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* Higher Official Verification Audit Stamp */}
+                {activeComplaint.verificationDetails && (
+                  <div className={`rounded-xl p-4 border text-xs space-y-2 ${
+                    activeComplaint.verificationDetails.decision === 'approved'
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-950'
+                      : 'bg-rose-50 border-rose-200 text-rose-950'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldAlert className="w-4 h-4 text-indigo-600" />
+                        <span>Higher Official Verification: {activeComplaint.verificationDetails.decision.toUpperCase()}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-normal">
+                        {new Date(activeComplaint.verificationDetails.verifiedAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-[11px] text-emerald-200/90 leading-relaxed">
-                      <strong>Identified Safety Risk:</strong> {activeComplaint.aiAnalysis.safetyRisk}
-                    </p>
-                    <p className="text-[11px] text-emerald-200/90">
-                      <strong>Recommended Operational Action:</strong> {activeComplaint.aiAnalysis.suggestedAction}
-                    </p>
+                    {activeComplaint.verificationDetails.officialNotes && (
+                      <p className="text-slate-700 leading-relaxed bg-white/70 p-2 rounded-lg">
+                        {activeComplaint.verificationDetails.officialNotes}
+                      </p>
+                    )}
+                    <div className="text-[11px] text-slate-600">
+                      Verified & Certified By: <strong>{activeComplaint.verificationDetails.verifiedBy}</strong>
+                    </div>
                   </div>
                 )}
 

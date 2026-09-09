@@ -13,6 +13,13 @@ import { CivicTips } from './components/CivicTips';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { UserDatabaseView } from './components/UserDatabaseView';
+import { WorkerDashboard } from './components/WorkerDashboard';
+import { HigherOfficialDashboard } from './components/HigherOfficialDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
+import { SmartCityServices } from './components/SmartCityServices';
+import { FutureScope } from './components/FutureScope';
+import { CivicSenseAI } from './components/CivicSenseAI';
+import { BottomNav } from './components/BottomNav';
 import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo } from './components/Logos';
 import { Complaint } from './types';
 import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
@@ -113,7 +120,20 @@ const CivicApp: React.FC = () => {
           <CivicMapView onSelectComplaint={handleTrackComplaint} />
         )}
         {currentTab === 'tips' && <CivicTips />}
+        {currentTab === 'services' && (
+          <SmartCityServices onReportIssue={() => setCurrentTab('report')} />
+        )}
+        {currentTab === 'future' && <FutureScope />}
+        {currentTab === 'worker-portal' && <WorkerDashboard />}
+        {currentTab === 'official-portal' && <HigherOfficialDashboard />}
+        {currentTab === 'admin-portal' && <AdminDashboard />}
       </main>
+
+      {/* Floating Bilingual AI Assistant */}
+      <CivicSenseAI onNavigate={(tab) => setCurrentTab(tab)} />
+
+      {/* Mobile Responsive Bottom Navigation */}
+      <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
       {/* Municipal CivicSense Footer */}
       <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-800 pt-12 pb-10 px-4 sm:px-6 lg:px-8 mt-auto">

@@ -20,9 +20,11 @@ import {
 import { LeafletMap } from './LeafletMap';
 import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
 import { useCivic } from '../context/CivicContext';
-import { ComplaintCategory, Severity, AIClassificationResult, Complaint } from '../types';
+import { ComplaintCategory, Severity, AIClassificationResult, Complaint, AIVerificationResult } from '../types';
 import { WARDS } from '../data/seedData';
 import { classifyComplaint, findPotentialDuplicates, DuplicateMatch } from '../services/aiClassifier';
+import { verifyComplaint, OFFICIAL_TEST_CASES } from '../services/aiVerificationService';
+import { AIVerificationCard } from './AIVerificationCard';
 
 const CATEGORIES: { name: ComplaintCategory; icon: string; desc: string }[] = [
   { name: 'Pothole', icon: '🕳️', desc: 'Road craters, dips & damaged tarmac' },
@@ -67,6 +69,11 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
   const [aiResult, setAiResult] = useState<AIClassificationResult | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
   const [supportedDuplicate, setSupportedDuplicate] = useState<string | null>(null);
+
+  // AI Verification State (CivicSense Smart Routing & Verification)
+  const [verificationResult, setVerificationResult] = useState<AIVerificationResult | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   // Submission / Receipt State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -187,9 +194,154 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
     }
   }, [title, description, category]);
 
-  // Form Submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // AI Verification Handlers
+  const handleVerifyComplaint = async (
+    customTitle?: string,
+    customDesc?: string,
+    customAddress?: string,
+    customLandmark?: string,
+    customWard?: string
+  ) => {
+    const t = customTitle !== undefined ? customTitle : title;
+    const d = customDesc !== undefined ? customDesc : description;
+    const a = customAddress !== undefined ? customAddress : address;
+    const l = customLandmark !== undefined ? customLandmark : landmark;
+    const w = customWard !== undefined ? customWard : ward;
+
+    if (!t.trim() && !d.trim()) {
+      alert('Please enter a complaint title or description to verify.');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const result = await verifyComplaint({
+        title: t,
+        description: d,
+        category,
+        address: a,
+        landmark: l,
+        ward: w,
+        existingComplaints: complaints,
+      });
+
+      setVerificationResult(result);
+
+      // Auto-update category if valid and recognized
+      if (result.validity === 'VALID' && result.category) {
+        const catLower = result.category.toLowerCase();
+        const matchingCategory = CATEGORIES.find((c) =>
+          catLower.includes(c.name.toLowerCase().slice(0, 4))
+        );
+        if (matchingCategory) {
+          setCategory(matchingCategory.name);
+        }
+      }
+
+      // Auto-update severity based on priority
+      if (result.priority === 'CRITICAL') {
+        setSeverity('Critical');
+      } else if (result.priority === 'HIGH') {
+        setSeverity('High');
+      } else if (result.priority === 'MEDIUM') {
+        setSeverity('Medium');
+      } else if (result.priority === 'LOW') {
+        setSeverity('Low');
+      }
+      return result;
+    } catch (err) {
+      console.error('Verification error:', err);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleSelectTestCase = async (testCaseId: string) => {
+    const testCase = OFFICIAL_TEST_CASES.find((tc) => tc.id === testCaseId);
+    if (!testCase) return;
+
+    setSelectedTestCaseId(testCaseId);
+    setTitle(testCase.title);
+    setDescription(testCase.description);
+
+    let testAddr = '';
+    let testLandmark = '';
+    let testWard = WARDS[0];
+
+    if (testCase.id === 'test-1') {
+      testAddr = 'RTC Complex Road, Vizianagaram';
+      testLandmark = 'Near RTC Bus Stand Entrance';
+      testWard = 'Ward 3 - Balaji Nagar & RTC Complex';
+      setCategory('Pothole');
+      setSeverity('High');
+      setPhotos([SAMPLE_EVIDENCE_PHOTOS[0]]);
+      setLat(18.1124);
+      setLng(83.4018);
+    } else if (testCase.id === 'test-2') {
+      // Test 2 has missing location intentionally!
+      testAddr = '';
+      testLandmark = '';
+      testWard = 'Ward 1 - Fort Road & Royal Palace Quarter';
+      setCategory('Garbage');
+      setSeverity('Medium');
+      setPhotos([SAMPLE_EVIDENCE_PHOTOS[1]]);
+      setLat(18.1067);
+      setLng(83.3956);
+    } else if (testCase.id === 'test-3') {
+      testAddr = 'Main Bazaar Road, Vizianagaram';
+      testLandmark = 'Beside Old Electric Substation';
+      testWard = 'Ward 1 - Fort Road & Royal Palace Quarter';
+      setCategory('Other');
+      setSeverity('Critical');
+      setPhotos([SAMPLE_EVIDENCE_PHOTOS[2]]);
+      setLat(18.1089);
+      setLng(83.3972);
+    } else if (testCase.id === 'test-4') {
+      testAddr = '';
+      testLandmark = '';
+      testWard = 'Ward 12 - Vizianagaram City Center & Clock Tower';
+      setPhotos([]);
+    } else if (testCase.id === 'test-5') {
+      testAddr = '';
+      testLandmark = '';
+      testWard = 'Ward 12 - Vizianagaram City Center & Clock Tower';
+      setPhotos([]);
+    } else if (testCase.id === 'test-6') {
+      testAddr = 'Near Municipal Park, Vizianagaram';
+      testLandmark = 'Opposite Heritage Park Gate 2';
+      testWard = 'Ward 6 - Phool Bagh Heritage Garden Zone';
+      setCategory('Streetlight');
+      setSeverity('Medium');
+      setPhotos([SAMPLE_EVIDENCE_PHOTOS[3]]);
+      setLat(18.115);
+      setLng(83.405);
+    } else if (testCase.id === 'test-7') {
+      testAddr = 'Near Zilla Parishad High School Road';
+      testLandmark = 'Near School Main Playground Gate';
+      testWard = 'Ward 2 - Cantonment Area & Collectorate';
+      setCategory('Drainage');
+      setSeverity('High');
+      setPhotos([SAMPLE_EVIDENCE_PHOTOS[2]]);
+      setLat(18.103);
+      setLng(83.391);
+    }
+
+    setAddress(testAddr);
+    setLandmark(testLandmark);
+    setWard(testWard);
+
+    // Immediately run verification so user gets instant output
+    await handleVerifyComplaint(
+      testCase.title,
+      testCase.description,
+      testAddr,
+      testLandmark,
+      testWard
+    );
+  };
+
+  const handleConfirmSubmit = async (vrToUse?: AIVerificationResult) => {
+    const vr = vrToUse || verificationResult;
     if (!title.trim()) {
       alert('Please enter a brief complaint title.');
       return;
@@ -206,13 +358,14 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
         description,
         category,
         severity,
-        address: address || `Near ${landmark || ward}`,
+        address: address || (vr?.location ? vr.location : `Near ${landmark || ward}`),
         landmark,
         ward,
         lat,
         lng,
         photos: photos.length > 0 ? photos : [SAMPLE_EVIDENCE_PHOTOS[0]],
         aiResult: aiResult || undefined,
+        verificationResult: vr || undefined,
       });
 
       setSubmittedComplaint(created);
@@ -222,6 +375,39 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Form Submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      alert('Please enter a brief complaint title.');
+      return;
+    }
+    if (!description.trim()) {
+      alert('Please describe the civic issue.');
+      return;
+    }
+
+    // If verification has not been run yet, run it now!
+    if (!verificationResult) {
+      const vr = await handleVerifyComplaint();
+      if (vr && vr.validity === 'VALID') {
+        if (vr.location_status !== 'MISSING') {
+          await handleConfirmSubmit(vr);
+        }
+      }
+      return;
+    }
+
+    if (verificationResult.validity === 'INVALID') {
+      alert(
+        `This submission was evaluated as INVALID: ${verificationResult.reason}. Please revise your complaint.`
+      );
+      return;
+    }
+
+    await handleConfirmSubmit(verificationResult);
   };
 
   // Quick Demo fill buttons to showcase fast viva grading
@@ -258,7 +444,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Title & Quick Fill Buttons */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
@@ -267,27 +453,102 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Report a Civic Issue</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Submit photo evidence with GPS coordinates. CivicSense AI will classify, prioritize, and route your report.
+            Submit photo evidence with GPS coordinates. CivicSense AI will verify validity, assign priority, and route to the correct municipal department.
           </p>
         </div>
 
         {/* Demo Preset Buttons */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400">Demo Presets:</span>
+          <span className="text-xs font-semibold text-slate-400">Presets:</span>
           <button
             type="button"
             onClick={fillSamplePothole}
             className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium px-2.5 py-1.5 rounded-lg border border-amber-200 transition-colors"
           >
-            🕳️ Fill Pothole
+            🕳️ Pothole
           </button>
           <button
             type="button"
             onClick={fillSampleGarbage}
             className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1.5 rounded-lg border border-emerald-200 transition-colors"
           >
-            🗑️ Fill Garbage
+            🗑️ Garbage
           </button>
+        </div>
+      </div>
+
+      {/* Official AI Verification Test Suite (Tests 1 - 7) */}
+      <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white border border-indigo-500/30 shadow-lg mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+              <Sparkles className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                Official AI Verification Test Suite
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-medium">
+                  7 Official Cases
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Click any test case to populate complaint data and trigger AI verification & smart municipal routing:
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400">Municipal Scope:</span>
+            <span className="text-[10px] font-bold text-indigo-300 bg-indigo-900/60 border border-indigo-700/60 px-2 py-0.5 rounded">
+              Vizianagaram (VMC)
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          {OFFICIAL_TEST_CASES.map((tc) => {
+            const isSelected = selectedTestCaseId === tc.id;
+            const isInvalid = tc.expected.includes('INVALID');
+            const isCritical = tc.expected.includes('CRITICAL');
+            const isHigh = tc.expected.includes('HIGH');
+            return (
+              <button
+                key={tc.id}
+                type="button"
+                onClick={() => handleSelectTestCase(tc.id)}
+                className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all group ${
+                  isSelected
+                    ? 'bg-indigo-600/30 border-indigo-400 ring-1 ring-indigo-400 shadow-xs'
+                    : 'bg-slate-800/60 border-slate-700/80 hover:bg-slate-800 hover:border-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[11px] font-bold text-indigo-200 font-mono">
+                    {tc.id.toUpperCase()}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                      isInvalid
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : isCritical
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        : isHigh
+                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}
+                  >
+                    {isInvalid ? 'INVALID' : isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : 'VALID'}
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-white line-clamp-1 group-hover:text-indigo-200">
+                  {tc.label.split(':')[1]?.trim() || tc.title}
+                </div>
+                <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                  {tc.expected}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -356,15 +617,26 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
                 <label className="block text-xs font-bold text-slate-700">
                   Detailed Description <span className="text-rose-500">*</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={handleRunAiAnalysis}
-                  disabled={isAnalyzing}
-                  className="inline-flex items-center text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
-                >
-                  <Sparkles className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
-                  <span>{isAnalyzing ? 'Analyzing...' : 'Run AI Triage'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyComplaint()}
+                    disabled={isVerifying}
+                    className="inline-flex items-center text-[11px] font-bold text-indigo-700 hover:text-indigo-800 gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors shadow-xs"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin' : ''}`} />
+                    <span>{isVerifying ? 'Verifying...' : 'Verify with AI'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRunAiAnalysis}
+                    disabled={isAnalyzing}
+                    className="inline-flex items-center text-[11px] font-medium text-slate-600 hover:text-slate-800 gap-1 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200"
+                  >
+                    <Sparkles className={`w-3 h-3 ${isAnalyzing ? 'animate-spin' : ''}`} />
+                    <span>{isAnalyzing ? 'Analyzing...' : 'Quick Triage'}</span>
+                  </button>
+                </div>
               </div>
               <textarea
                 rows={4}
@@ -691,22 +963,79 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
           </div>
         </div>
 
+        {/* Step 3.5: AI Verification & Smart Routing Result Card */}
+        {isVerifying && (
+          <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-700 flex flex-col items-center justify-center py-8 text-center space-y-2 animate-in fade-in">
+            <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-full border border-indigo-500/30">
+              <Sparkles className="w-6 h-6 animate-spin" />
+            </div>
+            <div className="text-sm font-bold text-white">Running AI Citizen Complaint Verification...</div>
+            <div className="text-xs text-slate-400 max-w-md">
+              Validating civic issue authenticity, extracting Vizianagaram landmarks, assessing public safety risk, and routing to the designated municipal department.
+            </div>
+          </div>
+        )}
+
+        {verificationResult && !isVerifying && (
+          <AIVerificationCard
+            result={verificationResult}
+            onConfirmSubmit={() => handleConfirmSubmit(verificationResult)}
+            onRevise={() => {
+              setVerificationResult(null);
+            }}
+            onAddLocation={(locData) => {
+              setAddress(locData.address);
+              setLandmark(locData.landmark);
+              setVerificationResult((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      location: locData.address,
+                      location_status: 'PROVIDED',
+                    }
+                  : null
+              );
+            }}
+            onSubmitForManualReview={() => {
+              handleConfirmSubmit({
+                ...verificationResult,
+                validity: 'NEEDS_REVIEW',
+              });
+            }}
+            isSubmitting={isSubmitting}
+          />
+        )}
+
         {/* Submit Button */}
         <div className="flex items-center justify-end gap-3 pt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md shadow-emerald-600/30 transition-all hover:shadow-lg disabled:opacity-50"
+            disabled={isSubmitting || isVerifying || (verificationResult?.validity === 'INVALID')}
+            className={`flex items-center gap-2 font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all hover:shadow-lg disabled:opacity-50 ${
+              verificationResult?.validity === 'INVALID'
+                ? 'bg-slate-300 text-slate-600 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+            }`}
           >
             {isSubmitting ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Generating Complaint Ticket...</span>
+                <span>Generating Official Complaint Ticket...</span>
+              </>
+            ) : verificationResult?.validity === 'INVALID' ? (
+              <>
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <span>Non-Civic Issue (Revise to Submit)</span>
+              </>
+            ) : verificationResult?.validity === 'VALID' ? (
+              <>
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Confirm & Register Grievance Ticket</span>
               </>
             ) : (
               <>
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Submit Grievance to Municipal Portal</span>
+                <Sparkles className="w-5 h-5 text-emerald-200" />
+                <span>Verify with AI & Submit Grievance</span>
               </>
             )}
           </button>

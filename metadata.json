@@ -2,7 +2,8 @@
   "name": "CivicSense",
   "description": "Smart civic complaint reporting, AI triage, lifecycle tracking, interactive GIS mapping, and municipal authority governance platform.",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "camera"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

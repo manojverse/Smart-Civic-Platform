@@ -30,6 +30,7 @@ const CATEGORY_KEYWORDS: Record<ComplaintCategory, string[]> = {
   'Public Property Damage': ['public property', 'vandalism', 'broken gate', 'bus stop shelter', 'railing broken', 'signboard fell', 'heritage damaged'],
   'Park Issue': ['park', 'garden', 'playground', 'swing', 'bench', 'grass overgrown', 'fallen tree', 'branch fallen', 'trees'],
   Sanitation: ['sanitation', 'public toilet', 'urinal', 'hygiene', 'defecation', 'foul smell', 'pest', 'mosquito breeding'],
+  'Public Toilet': ['public toilet', 'toilet block', 'community urinal', 'sulabh', 'lavatory', 'restroom cleanliness'],
   Other: ['other', 'civic', 'grievance', 'issue', 'municipal'],
 };
 
@@ -45,6 +46,7 @@ const DEPARTMENT_MAP: Record<ComplaintCategory, MunicipalDepartment> = {
   'Public Property Damage': 'Public Works Department (PWD)',
   'Park Issue': 'Horticulture & Parks',
   Sanitation: 'Public Health & Sanitation',
+  'Public Toilet': 'Public Health & Sanitation',
   Other: 'Public Works Department (PWD)',
 };
 
@@ -118,6 +120,7 @@ export function classifyComplaintOffline(input: ClassifyInput): AIClassification
     'Public Property Damage': 'Collapse hazard of damaged infrastructure, sharp metal/concrete edge risks.',
     'Park Issue': 'Injury risk to children on playground equipment and falling tree branch hazard.',
     Sanitation: 'Public health violation, spread of gastrointestinal contagion, and severe ambient foul odor.',
+    'Public Toilet': 'Hygiene violation, biohazard contagion risk, and lack of dignified basic sanitation facilities.',
     Other: 'General municipal inconvenience requiring field inspector verification.',
   };
 
@@ -133,6 +136,7 @@ export function classifyComplaintOffline(input: ClassifyInput): AIClassification
     'Public Property Damage': 'Cordon off damaged perimeter; schedule municipal carpentry/welding team.',
     'Park Issue': 'Tag equipment out-of-service and replace worn components immediately.',
     Sanitation: 'Execute deep sanitization, chlorine wash, and restock public sanitation amenities.',
+    'Public Toilet': 'Execute deep pressurized disinfection, restore continuous water pressure, and repair broken sanitation fittings.',
     Other: 'Assign zonal field officer for physical site audit and preliminary verification report.',
   };
 

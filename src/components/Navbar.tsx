@@ -19,6 +19,7 @@ import {
   UserPlus,
   LogOut,
   Database,
+  Compass,
 } from 'lucide-react';
 import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo, OfficialGovTechHeader } from './Logos';
 import { useCivic } from '../context/CivicContext';
@@ -237,6 +238,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             </button>
 
             <button
+              onClick={() => setCurrentTab('services')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                currentTab === 'services'
+                  ? 'bg-emerald-50 text-emerald-700 font-semibold ring-1 ring-emerald-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Compass className="w-4 h-4 text-emerald-600" />
+              <span>Smart Services</span>
+            </button>
+
+            <button
               onClick={() => setCurrentTab('map')}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
                 currentTab === 'map'
@@ -313,6 +326,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             >
               <BookOpen className="w-4 h-4" />
               <span>Civic Guide</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('future')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                currentTab === 'future'
+                  ? 'bg-amber-50 text-amber-800 font-semibold ring-1 ring-amber-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Roadmap</span>
             </button>
           </nav>
 
@@ -460,6 +485,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'tracking' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
         >
           All Complaints
+        </button>
+        <button
+          onClick={() => setCurrentTab('services')}
+          className={`px-2.5 py-1 rounded whitespace-nowrap ${currentTab === 'services' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+        >
+          Services
         </button>
         <button
           onClick={() => setCurrentTab('map')}
