@@ -30,7 +30,7 @@ import {
   Severity,
   AssignedOfficer,
 } from '../types';
-import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
+import { StateGovtLogo, CityCorpLogo } from './Logos';
 import { DEPARTMENTS, FIELD_OFFICERS, WARDS } from '../data/seedData';
 import { UserDatabaseView } from './UserDatabaseView';
 import { WorkerDashboard } from './WorkerDashboard';
@@ -172,20 +172,20 @@ export const AuthorityDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <VizianagaramCorpLogo className="w-12 h-12 shrink-0 drop-shadow-xs" />
-            <ApGovtLogo className="w-11 h-11 shrink-0 drop-shadow-xs hidden sm:block" />
+            <CityCorpLogo className="w-12 h-12 shrink-0 drop-shadow-xs" />
+            <StateGovtLogo className="w-11 h-11 shrink-0 drop-shadow-xs hidden sm:block" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                VMC Authority Command & Triage Portal
+                City Corp Authority Command & Triage Portal
               </h1>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
                 Official
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              విజయనగరం నగరపాలక సంస్థ • Government of Andhra Pradesh | Signed in:{' '}
+              Smart Civic Platform • State Government | Signed in:{' '}
               <strong className="text-slate-700">{currentUser.name}</strong> ({currentUser.role.replace('_', ' ')})
             </p>
           </div>

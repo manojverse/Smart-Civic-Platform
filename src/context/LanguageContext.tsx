@@ -139,14 +139,14 @@ export interface Translations {
 
 const TRANSLATIONS: Record<Language, Translations> = {
   en: {
-    brandTitle: 'CIVICSENSE',
-    brandSubtitle: 'Vizianagaram Municipal Corporation',
-    govtName: 'Government of Andhra Pradesh',
-    corpName: 'Vizianagaram Municipal Corporation',
-    deptName: 'Municipal Administration & Urban Development (MA&UD)',
-    navOverview: 'Overview',
+    brandTitle: 'SMART CIVIC',
+    brandSubtitle: 'Development & Complaint Resolution Platform',
+    govtName: 'Smart Civic Platform',
+    corpName: 'Smart Civic',
+    deptName: 'Civic Development & Complaint Resolution Platform',
+    navOverview: 'Dashboard',
     navReport: 'Report Issue',
-    navMyReports: 'My Reports',
+    navMyReports: 'My Complaints',
     navComplaints: 'Complaints',
     navServices: 'Smart Services',
     navMap: 'Civic Map',
@@ -155,12 +155,12 @@ const TRANSLATIONS: Record<Language, Translations> = {
     navAnalytics: 'Analytics',
     navWorker: 'Worker Portal',
     navOfficial: 'Official Portal',
-    navAdmin: 'Admin Dashboard',
-    switchUserRole: 'Switch User Role',
-    resetSeed: 'Reset Seed',
+    navAdmin: 'Administration',
+    switchUserRole: 'Switch Demo User',
+    resetSeed: 'Reset Data',
 
-    reportTitle: 'File a Civic Complaint',
-    reportSubtitle: 'AI Verification & Smart Municipal Routing for Vizianagaram',
+    reportTitle: 'Report a Civic Issue',
+    reportSubtitle: 'AI-Assisted Verification & Smart Department Routing',
     testSuiteTitle: 'Official Verification Test Scenarios',
     testSuiteDesc: 'One-click load official scenarios to test instantaneous AI authenticity, priority, and smart routing.',
     fieldTitle: 'Complaint Title',
@@ -203,9 +203,9 @@ const TRANSLATIONS: Record<Language, Translations> = {
     recommendedActionLabel: 'Recommended Action',
     duplicateDetected: 'Duplicate Notice: A similar complaint exists in this ward.',
     nonPretenceAdvisory: 'Official Advisory: AI verification results are automated advisory recommendations for municipal workflow triage and do not constitute statutory final administrative orders.',
-    confirmSubmissionBtn: 'Proceed & Register Grievance',
-    addLocationPrompt: 'Please specify the street address or nearby landmark before registering:',
-    addLocationPlaceholder: 'e.g. Beside RTC Bus Stand Depot Gate, Vizianagaram',
+    confirmSubmissionBtn: 'Proceed & Submit Issue',
+    addLocationPrompt: 'Please specify the street address or nearby landmark before submitting:',
+    addLocationPlaceholder: 'e.g. Near Central Bus Station, Main Road',
     updateLocationBtn: 'Update Location & Proceed',
 
     photoAuthTitle: 'Photo Authenticity & AI Deepfake Detection',
@@ -234,8 +234,8 @@ const TRANSLATIONS: Record<Language, Translations> = {
     inspectPhotoBtn: 'Inspect Image AI Fraud Report',
     aiPhotoWarningAlert: 'Warning: Uploaded image shows strong markers of synthetic generation or relevance mismatch. Municipal officers will conduct physical verification.',
 
-    officialReportTitle: 'Official Municipal Inspection & Verification Dossier',
-    officialReportSubtitle: 'Vizianagaram Municipal Corporation • Department of Urban Grievance Redressal',
+    officialReportTitle: 'Official Inspection & Verification Report',
+    officialReportSubtitle: 'Smart Civic Platform • Department of Urban Grievance Management',
     dossierRefNo: 'Official Dossier Ref No',
     grievanceDate: 'Date of Registration',
     reportingCitizen: 'Complainant',
@@ -247,22 +247,22 @@ const TRANSLATIONS: Record<Language, Translations> = {
     viewOfficialReportBtn: 'View Official Inspection Report',
     closeBtn: 'Close',
 
-    trackerTitle: 'Grievance Tracking & Audit Timeline',
+    trackerTitle: 'Issue Tracking & Audit Timeline',
     statusSubmitted: 'Submitted',
     statusVerified: 'Verified',
     statusAssigned: 'Assigned',
     statusInProgress: 'In Progress',
     statusResolved: 'Resolved',
 
-    heroTitle: 'Smart Civic Care. Intelligent Redressal.',
-    heroSubtitle: 'Official grievance redressal portal connecting citizens of Vizianagaram with municipal engineers. Equipped with Gemini AI hazard triage, GPS geotagged verification, 400m duplicate detection, and real-time field crew dispatch.',
-    heroReportCta: 'Report Civic Defect',
-    heroTrackCta: 'Track Status',
-    totalComplaints: 'Total Registered',
-    resolved: 'Resolved & Verified',
-    inProgress: 'In Active Field Repair',
-    slaHours: 'Target Resolution SLA',
-    recentIssues: 'Recent Community Issues',
+    heroTitle: 'Smart Civic. Smarter Resolution.',
+    heroSubtitle: 'A unified platform connecting citizens with municipal services. Powered by AI-assisted triage, GPS-verified location, duplicate detection, and real-time field crew dispatch.',
+    heroReportCta: 'Report an Issue',
+    heroTrackCta: 'Track My Complaints',
+    totalComplaints: 'Total Issues',
+    resolved: 'Resolved',
+    inProgress: 'In Progress',
+    slaHours: 'Resolution SLA',
+    recentIssues: 'Recent Issues',
     viewAll: 'View All',
   },
 
@@ -531,7 +531,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const STORAGE_KEY_LANG = 'civicsense_lang';
+const STORAGE_KEY_LANG = 'Smart Civic_lang';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {

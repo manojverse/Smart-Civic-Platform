@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { RegisteredUserRecord, UserRole, Complaint } from '../types';
-import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
+import { StateGovtLogo, CityCorpLogo } from './Logos';
 
 interface UserDatabaseViewProps {
   onSelectComplaint?: (complaint: Complaint) => void;
@@ -74,7 +74,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `VMC_Users_Database_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `City Corp_Users_Database_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -99,7 +99,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
             <div className="p-2 rounded-2xl bg-white/10 border border-white/20 shadow-md">
-              <VizianagaramCorpLogo className="w-14 h-14 shrink-0" />
+              <CityCorpLogo className="w-14 h-14 shrink-0" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -115,7 +115,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
                 Real-Time User & Visitor Database
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-                Vizianagaram Municipal Corporation (విజయనగరం నగరపాలక సంస్థ) centralized registry.
+                Smart Civic Platform centralized registry.
                 Monitoring citizens, field officers, and administrators currently visiting and reporting complaints.
               </p>
             </div>
@@ -331,7 +331,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
                         <div className="font-semibold text-slate-800 text-xs">
                           {user.ward || 'Ward 1 - Fort Area'}
                         </div>
-                        <div className="text-[10px] text-slate-400">Vizianagaram Corp</div>
+                        <div className="text-[10px] text-slate-400">Smart City Corp</div>
                       </td>
 
                       {/* Logins Count */}

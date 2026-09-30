@@ -81,7 +81,7 @@ export const SmartCityServices: React.FC = () => {
                 Smart City Directory
               </span>
             </div>
-            <h1 className="text-2xl font-bold mt-1">Vizianagaram Municipal Facilities & Helplines</h1>
+            <h1 className="text-2xl font-bold mt-1">Smart City Municipal Facilities & Helplines</h1>
             <p className="text-teal-200 text-sm mt-1 max-w-2xl">
               Locate nearby municipal utility centers, emergency contact lines, water treatment plants, and healthcare stations with direct navigation and one-touch calling.
             </p>

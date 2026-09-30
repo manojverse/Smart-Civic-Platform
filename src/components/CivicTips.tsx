@@ -35,7 +35,7 @@ export const CivicTips: React.FC = () => {
           <span>Municipal & Emergency Helpline Directory</span>
         </h2>
         <p className="text-xs text-slate-500">
-          For immediate life hazards, call national dispatch. For civil maintenance, use CivicSense.
+          For immediate life hazards, call national dispatch. For civil maintenance, use Smart Civic.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
@@ -58,7 +58,7 @@ export const CivicTips: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950">
-            <div className="text-2xl font-mono font-extrabold text-emerald-700">CivicSense</div>
+            <div className="text-2xl font-mono font-extrabold text-emerald-700">Smart Civic</div>
             <div className="text-xs font-bold mt-1">Smart Grievance Portal</div>
             <div className="text-[11px] text-emerald-800 mt-0.5">Potholes, garbage heaps, broken lights & drains</div>
           </div>
@@ -109,10 +109,10 @@ export const CivicTips: React.FC = () => {
       <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 space-y-3">
         <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
           <Sparkles className="w-4 h-4" />
-          <span>How CivicSense AI Triage Works</span>
+          <span>How Smart Civic AI Triage Works</span>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          CivicSense incorporates a dual-mode classification engine powered by Google Gemini and offline deterministic NLP rules. When you draft an issue:
+          Smart Civic incorporates a dual-mode classification engine powered by Google Gemini and offline deterministic NLP rules. When you draft an issue:
         </p>
         <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
           <li><strong>Text & Hazard Analysis:</strong> Evaluates keywords and safety impact (e.g., deep craters on high-speed corridors are flagged P1-Critical).</li>

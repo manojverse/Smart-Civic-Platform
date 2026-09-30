@@ -179,7 +179,7 @@ export const AdminDashboard: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `VMC_CivicSense_Audit_Log_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `City Corp_Smart Civic_Audit_Log_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -202,7 +202,7 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               </div>
               <p className="text-slate-300 text-sm mt-0.5">
-                Staff ID: <span className="font-mono text-indigo-200">VMC-ADM-001</span> • Vizianagaram Municipal Corporation (VMC)
+                Staff ID: <span className="font-mono text-indigo-200">City Corp-ADM-001</span> • Smart City Municipal Corporation (City Corp)
               </p>
               <div className="text-xs text-slate-400 mt-1">
                 Full Municipal Governance, Audit Surveillance, and Staff Access Control
@@ -374,7 +374,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">AI Category Distribution</h3>
-                    <p className="text-[11px] text-slate-500">Autonomous civic domain classification across Vizianagaram</p>
+                    <p className="text-[11px] text-slate-500">Autonomous civic domain classification across Smart City</p>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-slate-400">
@@ -813,7 +813,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">Verification Rationale:</label>
               <div className="text-xs text-slate-700 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 leading-relaxed">
-                {inspectComplaint.aiReason || 'This grievance has been evaluated as an actionable civic service request in Vizianagaram.'}
+                {inspectComplaint.aiReason || 'This grievance has been evaluated as an actionable civic service request in Smart City.'}
               </div>
             </div>
 
@@ -851,7 +851,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 flex items-start gap-2">
               <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <span>
-                <strong>Official Advisory:</strong> CivicSense AI operates strictly as an automated administrative support tool for Vizianagaram Municipal Corporation (VMC). It does not hold statutory authority; all work orders require field officer verification.
+                <strong>Official Advisory:</strong> Smart Civic AI operates strictly as an automated administrative support tool for Smart City Municipal Corporation (City Corp). It does not hold statutory authority; all work orders require field officer verification.
               </span>
             </div>
 

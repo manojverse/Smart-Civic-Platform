@@ -128,7 +128,7 @@ export const WorkerDashboard: React.FC = () => {
                 </span>
               </div>
               <p className="text-amber-200 text-sm mt-0.5">
-                Staff ID: <span className="font-mono font-semibold">{currentUser.employeeId || 'VMC-WRK-204'}</span> • {currentUser.department || 'Public Works Department (PWD)'}
+                Staff ID: <span className="font-mono font-semibold">{currentUser.employeeId || 'City Corp-WRK-204'}</span> • {currentUser.department || 'Public Works Department (PWD)'}
               </p>
               <div className="flex items-center gap-3 text-xs text-amber-200/80 mt-1">
                 <span className="flex items-center gap-1">

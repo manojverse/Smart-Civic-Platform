@@ -242,7 +242,7 @@ export const AIVerificationCard: React.FC<AIVerificationCardProps> = ({
             </div>
           ) : (
             <div className="font-bold text-slate-900 text-sm truncate">
-              {locationSaved ? `${extraAddress} (${extraLandmark || 'Vizianagaram'})` : result.location || 'Location Provided by Citizen'}
+              {locationSaved ? `${extraAddress} (${extraLandmark || 'Smart City'})` : result.location || 'Location Provided by Citizen'}
             </div>
           )}
           <div className="text-[11px] text-slate-500 mt-0.5">
@@ -340,7 +340,7 @@ export const AIVerificationCard: React.FC<AIVerificationCardProps> = ({
 
       {/* Advisory Notice */}
       <div className="text-[10px] text-slate-500 bg-slate-50/80 rounded-xl p-2.5 border border-slate-200 leading-normal">
-        <span className="font-semibold text-slate-700">Advisory Notice:</span> The AI verification and department recommendations are designed to assist citizens and municipal authorities in Vizianagaram. AI suggestions are advisory and do not constitute an official government action until accepted by the municipal corporation.
+        <span className="font-semibold text-slate-700">Advisory Notice:</span> The AI verification and department recommendations are designed to assist citizens and municipal authorities in Smart City. AI suggestions are advisory and do not constitute an official government action until accepted by the municipal corporation.
       </div>
 
       {/* Bottom CTA Actions */}

@@ -169,11 +169,11 @@ interface CivicContextType {
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
 
-const STORAGE_KEY_COMPLAINTS = 'civicsense_complaints_v2';
-const STORAGE_KEY_NOTIFS = 'civicsense_notifs_v2';
-const STORAGE_KEY_USER = 'civicsense_user_v2';
-const STORAGE_KEY_AUDIT = 'civicsense_audit_v2';
-const STORAGE_KEY_ANNOUNCEMENTS = 'civicsense_announcements_v2';
+const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v2';
+const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v2';
+const STORAGE_KEY_USER = 'Smart Civic_user_v2';
+const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v2';
+const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v2';
 
 export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. User state
@@ -511,7 +511,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         showToast(
           'Account Registered',
-          `Welcome to CivicSense Vizianagaram, ${newUser.name}!`,
+          `Welcome to Smart Civic Smart City, ${newUser.name}!`,
           'success'
         );
       }
@@ -673,8 +673,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
     const guestUser: User = {
       id: `GUEST-${Date.now().toString().slice(-4)}`,
-      name: 'Vizianagaram Visitor',
-      email: 'visitor@vizianagaram.gov.in',
+      name: 'Smart City Visitor',
+      email: 'visitor@Smart City.gov.in',
       role: 'citizen',
       ward: 'Ward 1 - Fort Road & Royal Palace Quarter',
     };
@@ -847,7 +847,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           id: `TL-${Date.now()}-2`,
           status: 'Verified',
           timestamp: new Date(Date.now() + 1000).toISOString(),
-          updatedBy: 'CivicSense AI Assistant',
+          updatedBy: 'Smart Civic AI Assistant',
           role: 'admin',
           remarks: `AI auto-classified issue under ${targetDept} with ${ai?.confidence}% confidence. Safety Risk: ${ai?.safetyRisk}`,
         },
@@ -1350,7 +1350,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       details: `Broadcasted advisory: "${newAnn.title}" under ${newAnn.department}.`,
     });
 
-    showToast('Announcement Published', 'Citizens and staff notified across Vizianagaram.', 'success');
+    showToast('Announcement Published', 'Citizens and staff notified across Smart City.', 'success');
   };
 
   // Admin User Approval
@@ -1603,7 +1603,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setCurrentUser(DEMO_USERS[0]);
     setSelectedComplaint(null);
-    showToast('Demo Database Reset', 'Restored to Vizianagaram Municipal presentation state.', 'info');
+    showToast('Demo Database Reset', 'Restored to Smart City Municipal presentation state.', 'info');
   };
 
   return (

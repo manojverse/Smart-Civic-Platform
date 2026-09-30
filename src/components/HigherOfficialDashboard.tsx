@@ -121,7 +121,7 @@ export const HigherOfficialDashboard: React.FC = () => {
                 </span>
               </div>
               <p className="text-slate-300 text-sm mt-0.5">
-                Official ID: <span className="font-mono text-indigo-200">{currentUser.employeeId || 'VMC-OFF-102'}</span> • {currentUser.department || 'Public Works Department (PWD)'}
+                Official ID: <span className="font-mono text-indigo-200">{currentUser.employeeId || 'City Corp-OFF-102'}</span> • {currentUser.department || 'Public Works Department (PWD)'}
               </p>
               <div className="text-xs text-slate-400 mt-1">
                 Supervisory Zone: All Wards (1 to 12) • High Authority Verification & Dispatch Portal
@@ -368,7 +368,7 @@ export const HigherOfficialDashboard: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-slate-900">Department Complaints Dispatch</h2>
               <p className="text-xs text-slate-500">
-                Filter and reassign complaints across Vizianagaram Municipal Corporation zones.
+                Filter and reassign complaints across Smart City Municipal Corporation zones.
               </p>
             </div>
 

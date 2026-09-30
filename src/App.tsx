@@ -21,9 +21,8 @@ import { SmartCityServices } from './components/SmartCityServices';
 import { FutureScope } from './components/FutureScope';
 import { CivicSenseAI } from './components/CivicSenseAI';
 import { BottomNav } from './components/BottomNav';
-import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo } from './components/Logos';
 import { Complaint } from './types';
-import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X, MapPin, BarChart3, Building2 } from 'lucide-react';
 
 const CivicApp: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -136,105 +135,62 @@ const CivicApp: React.FC = () => {
       {/* Mobile Responsive Bottom Navigation */}
       <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
-      {/* Municipal CivicSense Footer */}
-      <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-800 pt-12 pb-10 px-4 sm:px-6 lg:px-8 mt-auto">
-        <div className="max-w-7xl mx-auto space-y-10">
-          {/* Institutional Emblems Strip */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-8 border-b border-slate-800/80">
-            {/* 1. Government of Andhra Pradesh */}
-            <div className="flex items-center gap-3.5 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
-              <ApGovtLogo className="w-12 h-12 shrink-0 filter drop-shadow-md" />
-              <div>
-                <div className="text-xs font-bold text-white tracking-wide">
-                  ఆంధ్ర ప్రదేశ్ ప్రభుత్వం
-                </div>
-                <div className="text-[11px] text-emerald-400 font-semibold">
-                  Government of Andhra Pradesh
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Municipal Administration & Urban Development (MA&UD)
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Vizianagaram Municipal Corporation */}
-            <div className="flex items-center gap-3.5 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
-              <VizianagaramCorpLogo className="w-12 h-12 shrink-0 filter drop-shadow-md" />
-              <div>
-                <div className="text-xs font-bold text-white tracking-wide">
-                  విజయనగరం నగరపాలక సంస్థ
-                </div>
-                <div className="text-[11px] text-amber-400 font-semibold">
-                  Vizianagaram Municipal Corporation
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  సదా మీ సేవలో • Public Grievance Redressal Cell
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Academic Capstone & Research Partner */}
-            <div className="flex items-center gap-3.5 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
-              <CollegeEmblemLogo className="w-12 h-12 shrink-0 filter drop-shadow-md" />
-              <div>
-                <div className="text-xs font-bold text-white tracking-wide">
-                  పండితాః సమదర్శినః
-                </div>
-                <div className="text-[11px] text-rose-400 font-semibold">
-                  CSE Department • Estd. 1996
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Final-Year Capstone Project • Academic Year 2025–2026
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation and Copyright */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-2">
-            <div>
+      {/* Smart Civic Footer */}
+      <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-800 pt-10 pb-8 px-4 sm:px-6 lg:px-8 mt-auto">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Brand + Quick Links */}
+          <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+            {/* Brand identity */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-white text-base tracking-tight">CIVICSENSE VIZIANAGARAM</span>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  SMART GOVTECH
-                </span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="11" width="3" height="9" rx="0.5" fill="white" opacity="0.9" />
+                    <rect x="6" y="8" width="3" height="12" rx="0.5" fill="white" />
+                    <rect x="10" y="5" width="4" height="15" rx="0.5" fill="white" />
+                    <rect x="15" y="9" width="3" height="11" rx="0.5" fill="white" opacity="0.9" />
+                    <rect x="19" y="12" width="3" height="8" rx="0.5" fill="white" opacity="0.7" />
+                    <line x1="1" y1="20" x2="23" y2="20" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="font-extrabold text-white text-base tracking-tight">SMART CIVIC</span>
+                  <span className="ml-2 text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    v2.0
+                  </span>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-md">
-                Citizen-centric AI municipal grievance redressal, GIS duplicate triage, SLA compliance, and transparent public governance.
+              <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                A unified digital platform for monitoring public infrastructure, managing citizen complaints, and supporting data-driven civic services.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400 text-xs">
-              <button onClick={() => setCurrentTab('home')} className="hover:text-emerald-400 transition-colors">
-                Home
-              </button>
-              <button onClick={() => setCurrentTab('report')} className="hover:text-emerald-400 transition-colors">
-                Report Issue
-              </button>
-              <button onClick={() => setCurrentTab('my-complaints')} className="hover:text-emerald-400 transition-colors">
-                My Reports
-              </button>
-              <button onClick={() => setCurrentTab('tracking')} className="hover:text-emerald-400 transition-colors">
-                Audit Timeline
-              </button>
-              <button onClick={() => setCurrentTab('map')} className="hover:text-emerald-400 transition-colors">
-                GIS Map
-              </button>
-              <button onClick={() => setCurrentTab('authority')} className="hover:text-emerald-400 transition-colors">
-                Authority Portal
-              </button>
-              <button onClick={() => setCurrentTab('users-db')} className="hover:text-emerald-400 transition-colors">
-                User Database
-              </button>
-              <button onClick={() => setCurrentTab('analytics')} className="hover:text-emerald-400 transition-colors">
-                Analytics
-              </button>
+            {/* Quick navigation links */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-slate-400 text-xs">
+              <button onClick={() => setCurrentTab('home')} className="hover:text-emerald-400 transition-colors">Dashboard</button>
+              <button onClick={() => setCurrentTab('report')} className="hover:text-emerald-400 transition-colors">Report Issue</button>
+              <button onClick={() => setCurrentTab('my-complaints')} className="hover:text-emerald-400 transition-colors">My Complaints</button>
+              <button onClick={() => setCurrentTab('tracking')} className="hover:text-emerald-400 transition-colors">Track Issues</button>
+              <button onClick={() => setCurrentTab('map')} className="hover:text-emerald-400 transition-colors">Civic Map</button>
+              <button onClick={() => setCurrentTab('analytics')} className="hover:text-emerald-400 transition-colors">Analytics</button>
+              <button onClick={() => setCurrentTab('authority')} className="hover:text-emerald-400 transition-colors">Authority Portal</button>
+              <button onClick={() => setCurrentTab('users-db')} className="hover:text-emerald-400 transition-colors">User Directory</button>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-900 text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>© 2026 CivicSense • Vizianagaram Municipal Corporation & Govt. of Andhra Pradesh. All rights reserved.</span>
-            <span>Developed for CSE Capstone Defense 2026</span>
+          {/* Platform feature tags */}
+          <div className="flex flex-wrap gap-2">
+            {['AI-Assisted Triage', 'GIS Civic Mapping', 'Real-time Tracking', 'SLA Compliance', 'Photo Verification', 'Duplicate Detection', 'Multi-role Workflow'].map((tag) => (
+              <span key={tag} className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-900 text-slate-400 border border-slate-800">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Copyright */}
+          <div className="pt-4 border-t border-slate-900 text-slate-600 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>© 2026 Smart Civic Platform. All rights reserved.</span>
+            <span className="text-slate-700">Development &amp; Complaint Resolution Platform · v2.0</span>
           </div>
         </div>
       </footer>

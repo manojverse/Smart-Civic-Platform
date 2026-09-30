@@ -8,11 +8,9 @@ import {
   Users,
   FileText,
   RotateCcw,
-  Sparkles,
   ChevronDown,
   Building2,
   Home,
-  BookOpen,
   X,
   ExternalLink,
   LogIn,
@@ -20,12 +18,16 @@ import {
   LogOut,
   Database,
   Compass,
-  Languages,
+  Settings,
+  User,
+  ShieldCheck,
+  LayoutDashboard,
+  FolderOpen,
 } from 'lucide-react';
-import { ApGovtLogo, VizianagaramCorpLogo, CollegeEmblemLogo, OfficialGovTechHeader } from './Logos';
+import { SmartCivicHeader } from './Logos';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
-import { UserRole, Language } from '../types';
+import { UserRole } from '../types';
 import { DEMO_USERS } from '../data/seedData';
 
 interface NavbarProps {
@@ -49,166 +51,65 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
     signOutUser,
   } = useCivic();
 
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   const [notifOpen, setNotifOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [devMenuOpen, setDevMenuOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const isAuthority = currentUser.role !== 'citizen';
+  const isStaff = currentUser.role !== 'citizen';
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
+
+  const roleColor = isAdmin
+    ? 'text-purple-600 bg-purple-50 border-purple-200'
+    : isStaff
+    ? 'text-blue-600 bg-blue-50 border-blue-200'
+    : 'text-emerald-600 bg-emerald-50 border-emerald-200';
+
+  const roleLabel = currentUser.role.replace(/_/g, ' ');
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      {/* Official Government of AP & Vizianagaram Municipal Corporation Masthead */}
-      <OfficialGovTechHeader />
-
-      {/* Top Notification / Language / Role Switcher Strip */}
-      <div className="bg-slate-900 text-slate-300 text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            <Sparkles className="w-3 h-3 mr-1 text-emerald-400" />
-            AI Civic Governance • CSE 2026
-          </span>
-          <span className="hidden sm:inline text-slate-400">
-            {t.brandSubtitle} • Smart Citizen Redressal & Computer Vision Verification
-          </span>
-        </div>
-
-        {/* Right Header Controls: Language Dropdown Box + Quick Role Switcher Bar */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Multilingual Dropdown Selector ("langugesani drop box lo petu") */}
-          <div className="relative inline-flex items-center bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 px-2 py-1 transition-colors shadow-xs" title="Select Language / భాషను ఎంచుకోండి / भाषा चुनें">
-            <Languages className="w-3.5 h-3.5 text-indigo-400 mr-1.5 shrink-0" />
-            <select
-              id="language-select-dropdown"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as Language)}
-              className="bg-transparent text-white text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer pr-1"
-              aria-label="Language Selector Dropdown"
-            >
-              <option value="en" className="bg-slate-900 text-white font-medium">English (EN)</option>
-              <option value="te" className="bg-slate-900 text-white font-medium">తెలుగు (Telugu)</option>
-              <option value="hi" className="bg-slate-900 text-white font-medium">हिन्दी (Hindi)</option>
-            </select>
-          </div>
-
-          <span className="text-slate-400 text-[11px] hidden md:inline">Demo Persona:</span>
-          <div className="relative">
-            <button
-              onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded-md text-xs font-medium border border-slate-700 transition-colors"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>{currentUser.name}</span>
-              <span className="text-slate-400 text-[10px]">({currentUser.role.replace('_', ' ')})</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {roleMenuOpen && (
-              <div className="absolute right-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-1 text-slate-800 z-50 animate-in fade-in slide-in-from-top-1">
-                <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Switch User Role
-                </div>
-                {DEMO_USERS.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      switchRole(u.role as UserRole);
-                      setRoleMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                      currentUser.role === u.role ? 'bg-emerald-50 text-emerald-700 font-semibold' : ''
-                    }`}
-                  >
-                    <div>
-                      <div className="font-medium text-slate-900">{u.name}</div>
-                      <div className="text-[10px] text-slate-500 capitalize">{u.role.replace('_', ' ')}</div>
-                    </div>
-                    {currentUser.role === u.role && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    )}
-                  </button>
-                ))}
-
-                <div className="p-1.5 border-t border-slate-100 space-y-1">
-                  <button
-                    onClick={() => {
-                      setRoleMenuOpen(false);
-                      openAuthModal('signin');
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 rounded-md font-medium flex items-center gap-2"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Sign In to Account</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRoleMenuOpen(false);
-                      openAuthModal('signup');
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 rounded-md font-medium flex items-center gap-2"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Register New User</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRoleMenuOpen(false);
-                      signOutUser();
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-md font-medium flex items-center gap-2"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={resetDemoData}
-            title="Reset database to initial seed state for fresh demo"
-            className="flex items-center gap-1 text-slate-400 hover:text-white px-2 py-1 rounded text-[11px] hover:bg-slate-800 transition-colors"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span className="hidden sm:inline">Reset Seed</span>
-          </button>
-        </div>
-      </div>
+    <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      {/* Smart Civic platform header strip */}
+      <SmartCivicHeader />
 
       {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-2">
-          {/* Official Municipal & Project Logo */}
-          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0" onClick={() => setCurrentTab('home')}>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="p-1 rounded-xl bg-slate-50 border border-slate-200 shadow-xs group-hover:border-emerald-400 transition-colors">
-                <VizianagaramCorpLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
-              </div>
-              <div className="p-1 rounded-xl bg-slate-50 border border-slate-200 shadow-xs hidden sm:block group-hover:border-emerald-400 transition-colors">
-                <ApGovtLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
-              </div>
+        <div className="flex items-center justify-between h-14 gap-2">
+
+          {/* Brand wordmark */}
+          <div
+            className="flex items-center gap-2 cursor-pointer group shrink-0"
+            onClick={() => setCurrentTab('home')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && setCurrentTab('home')}
+            aria-label="Smart Civic Home"
+          >
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="11" width="3" height="9" rx="0.5" fill="white" opacity="0.9" />
+                <rect x="6" y="8" width="3" height="12" rx="0.5" fill="white" />
+                <rect x="10" y="5" width="4" height="15" rx="0.5" fill="white" />
+                <rect x="15" y="9" width="3" height="11" rx="0.5" fill="white" opacity="0.9" />
+                <rect x="19" y="12" width="3" height="8" rx="0.5" fill="white" opacity="0.7" />
+                <line x1="1" y1="20" x2="23" y2="20" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-                  CIVICSENSE
-                </span>
-                <span className="text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  VIZIANAGARAM
-                </span>
+            <div className="hidden sm:block">
+              <div className="font-extrabold text-slate-900 text-sm tracking-tight leading-none group-hover:text-emerald-700 transition-colors">
+                SMART CIVIC
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 font-semibold flex items-center gap-1">
-                <span>విజయనగరం</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-500 font-normal truncate max-w-[110px] sm:max-w-none">Govt. of AP</span>
-              </p>
+              <div className="text-[10px] text-slate-500 font-medium leading-none mt-0.5">
+                Civic Platform
+              </div>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-0.5" aria-label="Main navigation">
+            {/* Citizen-facing tabs (always visible) */}
             <button
               onClick={() => setCurrentTab('home')}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
@@ -216,8 +117,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   ? 'bg-slate-100 text-slate-900 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
+              aria-current={currentTab === 'home' ? 'page' : undefined}
             >
-              <Home className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4" />
               <span>{t.navOverview}</span>
             </button>
 
@@ -228,6 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   ? 'bg-emerald-50 text-emerald-700 font-semibold ring-1 ring-emerald-200'
                   : 'text-emerald-700 hover:bg-emerald-50'
               }`}
+              aria-current={currentTab === 'report' ? 'page' : undefined}
             >
               <PlusCircle className="w-4 h-4 text-emerald-600" />
               <span>{t.navReport}</span>
@@ -240,33 +143,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   ? 'bg-slate-100 text-slate-900 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
+              aria-current={currentTab === 'my-complaints' ? 'page' : undefined}
             >
               <FileText className="w-4 h-4" />
               <span>{t.navMyReports}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('tracking')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'tracking'
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <FileText className="w-4 h-4 text-slate-400" />
-              <span>{t.navComplaints}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('services')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'services'
-                  ? 'bg-emerald-50 text-emerald-700 font-semibold ring-1 ring-emerald-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Compass className="w-4 h-4 text-emerald-600" />
-              <span>{t.navServices}</span>
             </button>
 
             <button
@@ -276,52 +156,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   ? 'bg-slate-100 text-slate-900 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
+              aria-current={currentTab === 'map' ? 'page' : undefined}
             >
               <MapPin className="w-4 h-4" />
-              <span>{t.navMap}</span>
-            </button>
-
-            {/* Authority View Links */}
-            <div className="h-5 w-px bg-slate-200 mx-1"></div>
-
-            <button
-              onClick={() => setCurrentTab('authority')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'authority'
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span>{t.navAuthority}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('departments')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'departments'
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>Staff & Depts</span>
-            </button>
-
-            {/* Real-Time User Database Tab for Admin & Capstone Review */}
-            <button
-              onClick={() => setCurrentTab('users-db')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'users-db'
-                  ? 'bg-purple-50 text-purple-700 font-semibold ring-1 ring-purple-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Database className="w-4 h-4 text-purple-600" />
-              <span>User Database</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
-                {registeredUsers.length}
-              </span>
+              <span>Civic Map</span>
             </button>
 
             <button
@@ -331,72 +169,97 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   ? 'bg-purple-50 text-purple-700 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
+              aria-current={currentTab === 'analytics' ? 'page' : undefined}
             >
               <BarChart3 className="w-4 h-4 text-purple-600" />
               <span>Analytics</span>
             </button>
 
-            <button
-              onClick={() => setCurrentTab('tips')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'tips'
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Civic Guide</span>
-            </button>
+            {/* Staff/Admin-only divider and links */}
+            {isStaff && (
+              <>
+                <div className="h-5 w-px bg-slate-200 mx-1" />
 
-            <button
-              onClick={() => setCurrentTab('future')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'future'
-                  ? 'bg-amber-50 text-amber-800 font-semibold ring-1 ring-amber-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Roadmap</span>
-            </button>
+                <button
+                  onClick={() => setCurrentTab('tracking')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'tracking'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'tracking' ? 'page' : undefined}
+                >
+                  <FolderOpen className="w-4 h-4 text-slate-400" />
+                  <span>Complaints</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('authority')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'authority'
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'authority' ? 'page' : undefined}
+                >
+                  <Building2 className="w-4 h-4 text-blue-600" />
+                  <span>Authority</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('departments')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'departments'
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'departments' ? 'page' : undefined}
+                >
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>Departments</span>
+                </button>
+              </>
+            )}
+
+            {/* Admin-only links */}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setCurrentTab('users-db')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'users-db'
+                      ? 'bg-purple-50 text-purple-700 font-semibold ring-1 ring-purple-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'users-db' ? 'page' : undefined}
+                >
+                  <Database className="w-4 h-4 text-purple-600" />
+                  <span>Users</span>
+                  <span className="px-1.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
+                    {registeredUsers.length}
+                  </span>
+                </button>
+              </>
+            )}
           </nav>
 
-          {/* Action Area (Notifications & CTA) */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Sign In / Sign Up Trigger Button */}
-            <button
-              onClick={() => openAuthModal('signin')}
-              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 transition-colors"
-            >
-              <LogIn className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Sign In / Register</span>
-              <span className="sm:hidden">Auth</span>
-            </button>
-
-            {/* User Profile Avatar Trigger */}
-            <button
-              onClick={onOpenProfile}
-              title="Open User Profile"
-              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 flex items-center justify-center font-bold text-xs transition-colors"
-            >
-              {currentUser.name.charAt(0)}
-            </button>
+          {/* Right Action Area */}
+          <div className="flex items-center gap-2">
             {/* Notification Bell */}
             <div className="relative">
               <button
-                onClick={() => setNotifOpen(!notifOpen)}
+                onClick={() => { setNotifOpen(!notifOpen); setUserMenuOpen(false); }}
                 className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                aria-label="Notifications"
+                aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-xs">
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-sm">
                     {unreadCount}
                   </span>
                 )}
               </button>
 
-              {/* Notification Popover Drawer */}
               {notifOpen && (
                 <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
                   <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
@@ -418,6 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                       <button
                         onClick={() => setNotifOpen(false)}
                         className="text-slate-400 hover:text-slate-600"
+                        aria-label="Close notifications"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -455,7 +319,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                           <p className="text-slate-600 text-[11px] leading-relaxed">{notif.message}</p>
                           {notif.complaintId && (
                             <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
-                              <span>Track {notif.complaintId}</span>
+                              <span>View {notif.complaintId}</span>
                               <ExternalLink className="w-3 h-3" />
                             </div>
                           )}
@@ -467,10 +331,136 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               )}
             </div>
 
-            {/* Quick Report Button */}
+            {/* User/Profile menu */}
+            <div className="relative">
+              <button
+                onClick={() => { setUserMenuOpen(!userMenuOpen); setNotifOpen(false); }}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+                aria-label="User menu"
+                aria-expanded={userMenuOpen}
+              >
+                <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  {currentUser.name.charAt(0)}
+                </div>
+                <span className="text-xs font-medium text-slate-700 hidden sm:inline max-w-[100px] truncate">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50 animate-in fade-in slide-in-from-top-2">
+                  {/* User info header */}
+                  <div className="px-3 py-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-sm">
+                        {currentUser.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-900 truncate">{currentUser.name}</div>
+                        <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border capitalize ${roleColor}`}>
+                          {roleLabel}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu items */}
+                  <div className="py-1">
+                    <button
+                      onClick={() => { onOpenProfile(); setUserMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-slate-500" />
+                      <span>My Profile</span>
+                    </button>
+                    <button
+                      onClick={() => { openAuthModal('signin'); setUserMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Sign In to Account</span>
+                    </button>
+                    <button
+                      onClick={() => { openAuthModal('signup'); setUserMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Create Account</span>
+                    </button>
+                  </div>
+
+                  <div className="border-t border-slate-100 py-1">
+                    <button
+                      onClick={() => { signOutUser(); setUserMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+
+                  {/* Developer/Demo controls — collapsed in a sub-section */}
+                  <div className="border-t border-slate-100">
+                    <button
+                      onClick={() => setDevMenuOpen(!devMenuOpen)}
+                      className="w-full text-left px-3 py-2 text-[11px] text-slate-400 hover:text-slate-600 hover:bg-slate-50 flex items-center justify-between transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Settings className="w-3 h-3" />
+                        Developer / Demo
+                      </span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${devMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {devMenuOpen && (
+                      <div className="bg-slate-50/80 border-t border-slate-100 py-1">
+                        <div className="px-3 py-1 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                          Switch Demo User
+                        </div>
+                        {DEMO_USERS.map((u) => (
+                          <button
+                            key={u.id}
+                            onClick={() => {
+                              switchRole(u.role as UserRole);
+                              setUserMenuOpen(false);
+                              setDevMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-slate-100 transition-colors ${
+                              currentUser.role === u.role ? 'text-emerald-700 font-semibold' : 'text-slate-600'
+                            }`}
+                          >
+                            <div>
+                              <div className="font-medium">{u.name}</div>
+                              <div className="text-[10px] text-slate-400 capitalize">{u.role.replace(/_/g, ' ')}</div>
+                            </div>
+                            {currentUser.role === u.role && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            )}
+                          </button>
+                        ))}
+                        <div className="border-t border-slate-200 mt-1 pt-1 px-3 pb-1">
+                          <button
+                            onClick={() => { resetDemoData(); setUserMenuOpen(false); }}
+                            className="flex items-center gap-1.5 text-[11px] text-amber-600 hover:text-amber-700 font-medium"
+                            title="Reset application data to initial seed state"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Reset Demo Data</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Report CTA */}
             <button
               onClick={() => setCurrentTab('report')}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow-sm shadow-emerald-600/30 transition-all hover:shadow-md shrink-0"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm shadow-emerald-600/30 transition-all hover:shadow-md shrink-0"
+              aria-label="Report an issue"
             >
               <PlusCircle className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">{t.navReport}</span>
@@ -480,8 +470,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
         </div>
       </div>
 
-      {/* Mobile Sub-Navigation Bar (Tablet & Phone with Translations) */}
-      <div className="lg:hidden border-t border-slate-100 px-3 py-2 flex items-center justify-start text-xs bg-slate-50/95 overflow-x-auto gap-2 scrollbar-none">
+      {/* Mobile Sub-Navigation Bar */}
+      <div className="lg:hidden border-t border-slate-100 px-3 py-2 flex items-center justify-start text-xs bg-slate-50/95 overflow-x-auto gap-1 scrollbar-none">
         <button
           onClick={() => setCurrentTab('home')}
           className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'home' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
@@ -501,43 +491,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           {t.navMyReports}
         </button>
         <button
-          onClick={() => setCurrentTab('tracking')}
-          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'tracking' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-          {t.navComplaints}
-        </button>
-        <button
-          onClick={() => setCurrentTab('services')}
-          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'services' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-          {t.navServices}
-        </button>
-        <button
           onClick={() => setCurrentTab('map')}
           className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'map' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
-          {t.navMap}
-        </button>
-        <button
-          onClick={() => setCurrentTab('authority')}
-          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'authority' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-          {t.navAuthority}
-        </button>
-        <button
-          onClick={() => setCurrentTab('departments')}
-          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'departments' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-          Staff & Depts
-        </button>
-        <button
-          onClick={() => setCurrentTab('users-db')}
-          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap flex items-center gap-1 transition-colors ${currentTab === 'users-db' ? 'font-bold text-purple-700 bg-purple-50' : 'text-slate-600 hover:text-slate-900'}`}
-        >
-          <span>User Database</span>
-          <span className="text-[10px] px-1 bg-purple-100 text-purple-800 rounded-full font-bold">
-            {registeredUsers.length}
-          </span>
+          Civic Map
         </button>
         <button
           onClick={() => setCurrentTab('analytics')}
@@ -545,6 +502,33 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
         >
           Analytics
         </button>
+        {isStaff && (
+          <>
+            <button
+              onClick={() => setCurrentTab('authority')}
+              className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'authority' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Authority
+            </button>
+            <button
+              onClick={() => setCurrentTab('departments')}
+              className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'departments' ? 'font-bold text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Departments
+            </button>
+          </>
+        )}
+        {isAdmin && (
+          <button
+            onClick={() => setCurrentTab('users-db')}
+            className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap flex items-center gap-1 transition-colors ${currentTab === 'users-db' ? 'font-bold text-purple-700 bg-purple-50' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            <span>Users</span>
+            <span className="text-[10px] px-1 bg-purple-100 text-purple-800 rounded-full font-bold">
+              {registeredUsers.length}
+            </span>
+          </button>
+        )}
       </div>
     </header>
   );

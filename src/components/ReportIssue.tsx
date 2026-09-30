@@ -21,7 +21,6 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { LeafletMap } from './LeafletMap';
-import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
 import { ComplaintCategory, Severity, AIClassificationResult, Complaint, AIVerificationResult, PhotoAuthenticityAnalysis } from '../types';
@@ -66,7 +65,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
   const [landmark, setLandmark] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
 
-  // Coordinates (default: Central Vizianagaram Municipal Corporation HQ)
+  // Coordinates (default: Central City HQ)
   const [lat, setLat] = useState(18.1067);
   const [lng, setLng] = useState(83.3956);
   const [isLocating, setIsLocating] = useState(false);
@@ -78,7 +77,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
   const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
   const [supportedDuplicate, setSupportedDuplicate] = useState<string | null>(null);
 
-  // AI Verification State (CivicSense Smart Routing & Verification)
+  // AI Verification State (Smart Civic Smart Routing & Verification)
   const [verificationResult, setVerificationResult] = useState<AIVerificationResult | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
@@ -302,7 +301,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
     let testWard = WARDS[0];
 
     if (testCase.id === 'test-1') {
-      testAddr = 'RTC Complex Road, Vizianagaram';
+      testAddr = 'Central Avenue, Sector 4';
       testLandmark = 'Near RTC Bus Stand Entrance';
       testWard = 'Ward 3 - Balaji Nagar & RTC Complex';
       setCategory('Pothole');
@@ -321,7 +320,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
       setLat(18.1067);
       setLng(83.3956);
     } else if (testCase.id === 'test-3') {
-      testAddr = 'Main Bazaar Road, Vizianagaram';
+      testAddr = 'Main Bazaar Road, Downtown';
       testLandmark = 'Beside Old Electric Substation';
       testWard = 'Ward 1 - Fort Road & Royal Palace Quarter';
       setCategory('Other');
@@ -332,15 +331,15 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
     } else if (testCase.id === 'test-4') {
       testAddr = '';
       testLandmark = '';
-      testWard = 'Ward 12 - Vizianagaram City Center & Clock Tower';
+      testWard = 'Ward 12 - City Center & Clock Tower';
       setPhotos([]);
     } else if (testCase.id === 'test-5') {
       testAddr = '';
       testLandmark = '';
-      testWard = 'Ward 12 - Vizianagaram City Center & Clock Tower';
+      testWard = 'Ward 12 - City Center & Clock Tower';
       setPhotos([]);
     } else if (testCase.id === 'test-6') {
-      testAddr = 'Near Municipal Park, Vizianagaram';
+      testAddr = 'Near Municipal Park, Downtown';
       testLandmark = 'Opposite Heritage Park Gate 2';
       testWard = 'Ward 6 - Phool Bagh Heritage Garden Zone';
       setCategory('Streetlight');
@@ -488,7 +487,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Report a Civic Issue</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Submit photo evidence with GPS coordinates. CivicSense AI will verify validity, assign priority, and route to the correct municipal department.
+            Submit photo evidence with GPS coordinates. Smart Civic AI will verify validity, assign priority, and route to the correct municipal department.
           </p>
         </div>
 
@@ -535,7 +534,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-slate-400">Municipal Scope:</span>
             <span className="text-[10px] font-bold text-indigo-300 bg-indigo-900/60 border border-indigo-700/60 px-2 py-0.5 rounded">
-              Vizianagaram (VMC)
+              Smart Civic Platform
             </span>
           </div>
         </div>
@@ -595,7 +594,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             1. Select Civic Category <span className="text-rose-500">*</span>
           </label>
           <p className="text-xs text-slate-500 mb-4">
-            Pick the closest match. CivicSense AI will automatically refine the category and sub-service.
+            Pick the closest match. Smart Civic AI will automatically refine the category and sub-service.
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
@@ -1048,7 +1047,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             </div>
             <div className="text-sm font-bold text-white">Running AI Citizen Complaint Verification...</div>
             <div className="text-xs text-slate-400 max-w-md">
-              Validating civic issue authenticity, extracting Vizianagaram landmarks, assessing public safety risk, and routing to the designated municipal department.
+              Validating civic issue authenticity, extracting Smart City landmarks, assessing public safety risk, and routing to the designated municipal department.
             </div>
           </div>
         )}
@@ -1126,16 +1125,16 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
             {/* Official Municipal Authority Letterhead Header */}
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <VizianagaramCorpLogo className="w-12 h-12 shrink-0" />
+                <CityCorpLogo className="w-12 h-12 shrink-0" />
                 <div className="leading-tight">
                   <div className="text-xs font-black text-slate-900">
-                    విజయనగరం నగరపాలక సంస్థ
+                    Smart Civic Platform
                   </div>
                   <div className="text-[10px] font-semibold text-slate-600">
-                    Vizianagaram Municipal Corporation
+                    Smart City Municipal Corporation
                   </div>
                   <div className="text-[9px] text-amber-600 font-bold">
-                    సదా మీ సేవలో • Grievance Cell
+                    Always at your service • Grievance Cell
                   </div>
                 </div>
               </div>
@@ -1143,13 +1142,13 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
               <div className="flex items-center gap-2 text-right">
                 <div className="leading-tight hidden sm:block">
                   <div className="text-xs font-black text-emerald-800">
-                    ఆంధ్ర ప్రదేశ్ ప్రభుత్వం
+                    State Government
                   </div>
                   <div className="text-[9px] text-slate-500">
-                    Govt. of Andhra Pradesh
+                    Municipal Administration
                   </div>
                 </div>
-                <ApGovtLogo className="w-11 h-11 shrink-0" />
+                <StateGovtLogo className="w-11 h-11 shrink-0" />
               </div>
             </div>
 
@@ -1159,7 +1158,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({ onTrackComplaint }) =>
               </span>
               <h3 className="text-lg font-bold text-slate-900 mt-1">Complaint Successfully Registered!</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Logged into Vizianagaram Municipal Corporation e-Redressal Portal.
+                Logged into Smart City Municipal Corporation e-Redressal Portal.
               </p>
             </div>
 

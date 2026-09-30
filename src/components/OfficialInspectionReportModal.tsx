@@ -1,7 +1,7 @@
 import React from 'react';
 import { Complaint } from '../types';
 import { useLanguage } from '../context/LanguageContext';
-import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
+import { StateGovtLogo, CityCorpLogo } from './Logos';
 import {
   Printer,
   Download,
@@ -42,8 +42,8 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
 
   const handleDownloadJson = () => {
     const reportData = {
-      officialHeader: 'Vizianagaram Municipal Corporation - Grievance Redressal Dossier',
-      dossierId: `VMC-GRC-${complaint.id}`,
+      officialHeader: 'Smart City Municipal Corporation - Grievance Redressal Dossier',
+      dossierId: `City Corp-GRC-${complaint.id}`,
       generatedAt: new Date().toISOString(),
       language,
       complaint: {
@@ -75,7 +75,7 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `VMC_Official_Inspection_${complaint.id}.json`;
+    a.download = `City Corp_Official_Inspection_${complaint.id}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -128,8 +128,8 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
           <div className="border-b-2 border-slate-800 pb-5">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
               <div className="flex items-center gap-4">
-                <VizianagaramCorpLogo className="w-16 h-16 shrink-0 filter drop-shadow-sm" />
-                <ApGovtLogo className="w-16 h-16 shrink-0 filter drop-shadow-sm" />
+                <CityCorpLogo className="w-16 h-16 shrink-0 filter drop-shadow-sm" />
+                <StateGovtLogo className="w-16 h-16 shrink-0 filter drop-shadow-sm" />
                 <div>
                   <h1 className="text-lg sm:text-xl font-extrabold text-slate-950 tracking-tight">
                     {t.corpName}
@@ -148,7 +148,7 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
                   {t.dossierRefNo}
                 </div>
                 <div className="text-sm font-mono font-extrabold text-slate-900 tracking-wider">
-                  VMC/GRC/2026/{complaint.id.replace(/[^0-9]/g, '').slice(-6) || '00101'}
+                  City Corp/GRC/2026/{complaint.id.replace(/[^0-9]/g, '').slice(-6) || '00101'}
                 </div>
                 <div className="text-[10px] text-slate-600 mt-1 flex items-center justify-center sm:justify-end gap-1">
                   <Calendar className="w-3 h-3 text-slate-400" />
@@ -420,10 +420,10 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
                   Assistant Executive Engineer
                 </div>
                 <div className="text-[9px] text-slate-400 text-center w-44">
-                  Vizianagaram Municipal Corporation
+                  Smart City Municipal Corporation
                 </div>
                 <div className="mt-2 px-2.5 py-1 rounded bg-slate-200 text-slate-700 font-mono text-[10px]">
-                  STAMP: VMC-INSPECTED-2026
+                  STAMP: City Corp-INSPECTED-2026
                 </div>
               </div>
             </div>
@@ -439,7 +439,7 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
 
         {/* Modal Footer (Hidden in Print) */}
         <div className="px-6 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600 print:hidden">
-          <span>Official Andhra Pradesh Municipal Redressal Docket</span>
+          <span>Official State Government Municipal Redressal Docket</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition-colors"

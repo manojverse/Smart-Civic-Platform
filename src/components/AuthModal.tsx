@@ -20,7 +20,7 @@ import {
 import { useCivic } from '../context/CivicContext';
 import { UserRole, MunicipalDepartment } from '../types';
 import { WARDS, DEPARTMENTS } from '../data/seedData';
-import { ApGovtLogo, VizianagaramCorpLogo } from './Logos';
+import { StateGovtLogo, CityCorpLogo } from './Logos';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -110,7 +110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="p-1 rounded-xl bg-white/10 border border-white/20">
-              <VizianagaramCorpLogo className="w-10 h-10 shrink-0" />
+              <CityCorpLogo className="w-10 h-10 shrink-0" />
             </div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
@@ -118,10 +118,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>Real-Time Citizen & Officer Auth</span>
               </div>
               <h2 className="text-lg font-bold text-white leading-tight">
-                {mode === 'signin' ? 'Sign In to CivicSense' : 'Register New Civic Account'}
+                {mode === 'signin' ? 'Sign In to Smart Civic' : 'Register New Civic Account'}
               </h2>
               <p className="text-[11px] text-slate-400">
-                విజయనగరం నగరపాలక సంస్థ • VMC Public Grievance Portal
+                Smart Civic Platform • Public Grievance Portal
               </p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="text-[11px] text-amber-800 leading-relaxed">
                   {(localError || authError)?.includes('operation-not-allowed')
-                    ? 'Email/Password sign-in provider is disabled in the Firebase Console (under Authentication > Sign-in method). CivicSense has automatically switched to the Live Cloud Firestore Database so your account and session continue without disruption.'
+                    ? 'Email/Password sign-in provider is disabled in the Firebase Console (under Authentication > Sign-in method). Smart Civic has automatically switched to the Live Cloud Firestore Database so your account and session continue without disruption.'
                     : localError || authError}
                 </div>
               </div>
@@ -230,7 +230,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Vizianagaram Ward</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Smart City Ward</label>
                   <select
                     value={ward}
                     onChange={(e) => setWard(e.target.value)}
@@ -273,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="citizen@vizianagaram.gov.in"
+                placeholder="citizen@Smart City.gov.in"
                 className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
               />
             </div>

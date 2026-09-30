@@ -45,7 +45,7 @@ export const OFFICIAL_TEST_CASES = [
     id: 'test-1',
     label: 'Test 1: Pothole on RTC Complex (Valid & High Priority)',
     title: 'Huge pothole causing traffic skids',
-    description: 'There is a huge pothole near RTC Complex in Vizianagaram. Many bikes are struggling to pass.',
+    description: 'There is a huge pothole near RTC Complex in Downtown. Many bikes are struggling to pass.',
     expected: 'VALID • Roads & Infrastructure • Pothole • HIGH • Location Provided'
   },
   {
@@ -65,8 +65,8 @@ export const OFFICIAL_TEST_CASES = [
   {
     id: 'test-4',
     label: 'Test 4: General City Praise (INVALID)',
-    title: 'Vizianagaram is a beautiful city',
-    description: 'Vizianagaram is a beautiful city.',
+    title: 'The city is beautiful',
+    description: 'The city is beautiful.',
     expected: 'INVALID • Not a civic complaint'
   },
   {
@@ -124,18 +124,18 @@ function checkInvalidPatterns(combinedText: string): { isInvalid: boolean; reaso
     };
   }
 
-  // Praise / greeting / non-complaint statement (e.g. "Vizianagaram is a beautiful city")
+  // Praise / greeting / non-complaint statement (e.g. "The city is beautiful")
   const praisePatterns = [
     /beautiful city/i,
-    /love vizianagaram/i,
+    /love the city/i,
     /great city/i,
     /good morning/i,
     /hello how are you/i,
     /nice weather/i,
     /wonderful place/i,
     /i love this place/i,
-    /vizianagaram is awesome/i,
-    /vizianagaram is a beautiful city/i
+    /the city is awesome/i,
+    /the city is beautiful/i
   ];
   if (praisePatterns.some((pattern) => pattern.test(text)) && !text.includes('pothole') && !text.includes('drain') && !text.includes('waste') && !text.includes('leak')) {
     return {
@@ -182,12 +182,11 @@ function extractLocation(
   // Look for location cues in the narrative text
   const text = combinedText;
 
-  // Exact known municipal landmarks & roads in Vizianagaram
+  // Exact known municipal landmarks & roads in the city
   const knownLocations = [
-    'RTC Complex, Vizianagaram',
     'RTC Complex',
     'Fort Road',
-    'Vizianagaram Fort',
+    'City Fort',
     'Gajuwaka Road',
     'Mayuri Junction',
     'Collectorate Junction',
@@ -218,9 +217,9 @@ function extractLocation(
       // Normalize location string
       let cleanedLoc = loc;
       if (loc.toLowerCase().includes('rtc complex')) {
-        cleanedLoc = 'RTC Complex, Vizianagaram';
+        cleanedLoc = 'RTC Complex, Downtown';
       } else if (loc.toLowerCase().includes('municipal park')) {
-        cleanedLoc = 'Near Municipal Park, Vizianagaram';
+        cleanedLoc = 'Near Municipal Park, Downtown';
       } else if (loc.toLowerCase().includes('school')) {
         cleanedLoc = 'Near Local School Zone';
       }
@@ -264,8 +263,8 @@ export function verifyComplaintDeterministic(input: VerifyComplaintInput): AIVer
       category: 'Other Civic Issues',
       subcategory: isGibberish ? 'Meaningless Input' : 'General Expression',
       priority: 'LOW',
-      location: lower.includes('vizianagaram') ? 'Vizianagaram' : '',
-      location_status: lower.includes('vizianagaram') ? 'PROVIDED' : 'MISSING',
+      location: lower.includes('downtown') ? 'Downtown' : '',
+      location_status: lower.includes('downtown') ? 'PROVIDED' : 'MISSING',
       reason: invalidCheck.reason,
       recommended_department: 'Requires Municipal Review',
       recommended_action: 'No municipal action required for non-civic submission.',

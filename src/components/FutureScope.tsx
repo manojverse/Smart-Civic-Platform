@@ -20,7 +20,7 @@ export const FutureScope: React.FC = () => {
   const futureModules = [
     {
       title: 'Autonomous Drone Pothole & Road Surface Scanners',
-      desc: 'Scheduled drone flights over Vizianagaram Fort Road and Ring Road capturing high-resolution 3D lidar mesh data to detect micro-cracks before they turn into severe potholes.',
+      desc: 'Scheduled drone flights over Smart City Fort Road and Ring Road capturing high-resolution 3D lidar mesh data to detect micro-cracks before they turn into severe potholes.',
       icon: <Plane className="w-5 h-5 text-indigo-600" />,
       tag: 'Q1 2027 • Computer Vision',
     },
@@ -67,7 +67,7 @@ export const FutureScope: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold">Future Scope & Municipal Smart City Innovations</h1>
         <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-          Scalable next-generation modules expanding CivicSense into a fully autonomous, predictive urban infrastructure management operating system.
+          Scalable next-generation modules expanding Smart Civic into a fully autonomous, predictive urban infrastructure management operating system.
         </p>
       </div>
 

@@ -92,7 +92,7 @@ export function scoreWorkerAssignment(
   else if (activeTasks >= 4) workloadScore = 4;
 
   // 5. Distance & Area Proximity (Max 15)
-  // Vizianagaram town center coordinates default: 18.1124, 83.3978
+  // Smart City town center coordinates default: 18.1124, 83.3978
   const wLat = worker.lat || 18.1124;
   const wLng = worker.lng || 83.3978;
   const distanceKm = calculateDistanceKm(complaintLat, complaintLng, wLat, wLng);
