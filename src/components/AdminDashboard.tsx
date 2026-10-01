@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, AuditLog, Complaint, AIValidity, AIPriority } from '../types';
+import { User, AuditLog, Complaint, AIValidity, AIPriority, getRoleDisplayName } from '../types';
 import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
 
 export const AdminDashboard: React.FC = () => {
@@ -901,7 +901,7 @@ export const AdminDashboard: React.FC = () => {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    {r.replace('_', ' ')}
+                    {r === 'all' ? 'All' : getRoleDisplayName(r)}
                   </button>
                 ))}
               </div>
@@ -931,7 +931,7 @@ export const AdminDashboard: React.FC = () => {
                                 : 'bg-slate-100 text-slate-700'
                             }`}
                           >
-                            {user.role.replace('_', ' ')}
+                            {getRoleDisplayName(user.role)}
                           </span>
 
                           <span

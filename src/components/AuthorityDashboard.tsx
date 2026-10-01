@@ -29,6 +29,7 @@ import {
   Priority,
   Severity,
   AssignedOfficer,
+  getRoleDisplayName,
 } from '../types';
 import { StateGovtLogo, CityCorpLogo } from './Logos';
 import { DEPARTMENTS, FIELD_OFFICERS, WARDS } from '../data/seedData';
@@ -186,7 +187,7 @@ export const AuthorityDashboard: React.FC = () => {
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Smart Civic Platform • State Government | Signed in:{' '}
-              <strong className="text-slate-700">{currentUser.name}</strong> ({currentUser.role.replace('_', ' ')})
+              <strong className="text-slate-700">{currentUser.name}</strong> ({getRoleDisplayName(currentUser.role)})
             </p>
           </div>
         </div>
@@ -224,7 +225,7 @@ export const AuthorityDashboard: React.FC = () => {
             }`}
           >
             <Activity className="w-3.5 h-3.5 text-amber-600" />
-            <span>Field Worker Portal</span>
+            <span>Field Officer Portal</span>
           </button>
 
           <button
@@ -236,7 +237,7 @@ export const AuthorityDashboard: React.FC = () => {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Higher Official Review</span>
+            <span>Civic Administrator Review</span>
           </button>
 
           <button
@@ -248,7 +249,7 @@ export const AuthorityDashboard: React.FC = () => {
             }`}
           >
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Admin Governance</span>
+            <span>System Administrator Governance</span>
           </button>
 
           <button

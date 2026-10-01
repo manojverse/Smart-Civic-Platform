@@ -21,7 +21,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
-import { RegisteredUserRecord, UserRole, Complaint } from '../types';
+import { RegisteredUserRecord, UserRole, Complaint, getRoleDisplayName } from '../types';
 import { StateGovtLogo, CityCorpLogo } from './Logos';
 
 interface UserDatabaseViewProps {
@@ -317,7 +317,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
                           }`}
                         >
                           <Shield className="w-3 h-3" />
-                          <span className="capitalize">{user.role.replace('_', ' ')}</span>
+                          <span>{getRoleDisplayName(user.role)}</span>
                         </span>
                         {user.department && (
                           <div className="text-[10px] text-slate-500 font-medium mt-1">
@@ -418,7 +418,7 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Role</div>
                   <div className="font-bold text-slate-800 capitalize mt-0.5">
-                    {selectedUserDetail.role.replace('_', ' ')}
+                    {getRoleDisplayName(selectedUserDetail.role)}
                   </div>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">

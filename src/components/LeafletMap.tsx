@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Complaint, ComplaintStatus, Severity } from '../types';
+import { Complaint, ComplaintStatus, Severity, InfrastructureProject, InfrastructureProjectStatus } from '../types';
 
 interface LeafletMapProps {
   // Center coordinates (default: Bengaluru central civic grid)
@@ -15,6 +15,8 @@ interface LeafletMapProps {
   complaints?: Complaint[];
   onSelectComplaint?: (complaint: Complaint) => void;
   showHeatspots?: boolean;
+  infrastructureProjects?: InfrastructureProject[];
+  onSelectProject?: (project: InfrastructureProject) => void;
 }
 
 const STATUS_COLORS: Record<ComplaintStatus, string> = {
@@ -41,6 +43,13 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   Low: '#10b981',
 };
 
+const PROJECT_STATUS_COLORS: Record<InfrastructureProjectStatus, string> = {
+  Planned: '#6366f1',
+  'In Progress': '#f97316',
+  Delayed: '#dc2626',
+  Completed: '#10b981',
+};
+
 export const LeafletMap: React.FC<LeafletMapProps> = ({
   center = [12.9716, 77.5946],
   zoom = 13,
@@ -51,6 +60,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   complaints = [],
   onSelectComplaint,
   showHeatspots = false,
+  infrastructureProjects = [],
+  onSelectProject,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -229,7 +240,47 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         }
       });
     });
-  }, [complaints, isPicker, showHeatspots, onSelectComplaint]);
+
+    infrastructureProjects.forEach((proj) => {
+      const statusColor = PROJECT_STATUS_COLORS[proj.status] || '#0f766e';
+      const markerHtml = `
+        <div class="relative cursor-pointer -translate-x-1/2 -translate-y-full">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-lg ring-2 ring-white" style="background-color: ${statusColor}">
+            <span class="text-[9px] font-bold tracking-tight">PJ</span>
+          </div>
+        </div>
+      `;
+      const customIcon = L.divIcon({
+        html: markerHtml,
+        className: 'custom-project-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      });
+      const marker = L.marker([proj.lat, proj.lng], { icon: customIcon }).addTo(markersGroupRef.current!);
+      const popupContent = document.createElement('div');
+      popupContent.className = 'p-1 font-sans text-xs w-60';
+      popupContent.innerHTML = `
+        <div class="flex items-center justify-between pb-1 border-b border-slate-200 mb-1.5">
+          <span class="font-mono font-bold text-slate-700">${proj.id}</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white" style="background-color: ${statusColor}">
+            ${proj.status}
+          </span>
+        </div>
+        <p class="font-bold text-slate-900 line-clamp-1 mb-1">${proj.name}</p>
+        <p class="text-slate-500 text-[11px] line-clamp-2 mb-2">${proj.type} · ${proj.progressPercent}% complete</p>
+        <button id="btn-view-proj-${proj.id}" class="w-full py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded font-medium text-center transition-colors">
+          View Project
+        </button>
+      `;
+      marker.bindPopup(popupContent);
+      marker.on('popupopen', () => {
+        const btn = document.getElementById(`btn-view-proj-${proj.id}`);
+        if (btn && onSelectProject) {
+          btn.onclick = () => onSelectProject(proj);
+        }
+      });
+    });
+  }, [complaints, infrastructureProjects, isPicker, showHeatspots, onSelectComplaint, onSelectProject]);
 
   return (
     <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100" style={{ height }}>

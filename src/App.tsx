@@ -13,6 +13,7 @@ import { CivicMapView } from './components/CivicMapView';
 import { CivicTips } from './components/CivicTips';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AuthModal } from './components/AuthModal';
+import { LoginPage } from './components/LoginPage';
 import { UserDatabaseView } from './components/UserDatabaseView';
 import { WorkerDashboard } from './components/WorkerDashboard';
 import { HigherOfficialDashboard } from './components/HigherOfficialDashboard';
@@ -20,6 +21,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { SmartCityServices } from './components/SmartCityServices';
 import { FutureScope } from './components/FutureScope';
 import { CivicSenseAI } from './components/CivicSenseAI';
+import { InfrastructureProjects } from './components/InfrastructureProjects';
 import { BottomNav } from './components/BottomNav';
 import { Complaint } from './types';
 import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X, MapPin, BarChart3, Building2 } from 'lucide-react';
@@ -29,13 +31,19 @@ const CivicApp: React.FC = () => {
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const {
     setSelectedComplaint,
+    setSelectedProject,
     activeToast,
     clearToast,
     isAuthModalOpen,
     closeAuthModal,
     authModalMode,
     recordComplaintVisit,
+    isAuthenticated,
   } = useCivic();
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   const handleTrackComplaint = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
@@ -117,7 +125,21 @@ const CivicApp: React.FC = () => {
         {currentTab === 'departments' && <DepartmentManagement />}
         {currentTab === 'analytics' && <CivicAnalytics />}
         {currentTab === 'map' && (
-          <CivicMapView onSelectComplaint={handleTrackComplaint} />
+          <CivicMapView
+            onSelectComplaint={handleTrackComplaint}
+            onSelectProject={(project) => {
+              setSelectedProject(project);
+              setCurrentTab('projects');
+            }}
+          />
+        )}
+        {currentTab === 'projects' && (
+          <InfrastructureProjects
+            onOpenComplaint={(complaint) => {
+              setSelectedComplaint(complaint);
+              setCurrentTab('tracking');
+            }}
+          />
         )}
         {currentTab === 'tips' && <CivicTips />}
         {currentTab === 'services' && (
@@ -172,6 +194,7 @@ const CivicApp: React.FC = () => {
               <button onClick={() => setCurrentTab('my-complaints')} className="hover:text-emerald-400 transition-colors">My Complaints</button>
               <button onClick={() => setCurrentTab('tracking')} className="hover:text-emerald-400 transition-colors">Track Issues</button>
               <button onClick={() => setCurrentTab('map')} className="hover:text-emerald-400 transition-colors">Civic Map</button>
+              <button onClick={() => setCurrentTab('projects')} className="hover:text-emerald-400 transition-colors">Projects</button>
               <button onClick={() => setCurrentTab('analytics')} className="hover:text-emerald-400 transition-colors">Analytics</button>
               <button onClick={() => setCurrentTab('authority')} className="hover:text-emerald-400 transition-colors">Authority Portal</button>
               <button onClick={() => setCurrentTab('users-db')} className="hover:text-emerald-400 transition-colors">User Directory</button>

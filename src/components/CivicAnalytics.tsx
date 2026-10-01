@@ -17,7 +17,7 @@ import { useCivic } from '../context/CivicContext';
 import { WARDS, DEPARTMENTS } from '../data/seedData';
 
 export const CivicAnalytics: React.FC = () => {
-  const { complaints } = useCivic();
+  const { complaints, infrastructureProjects } = useCivic();
 
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('all');
 
@@ -317,6 +317,53 @@ export const CivicAnalytics: React.FC = () => {
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="p-1.5 rounded-lg bg-teal-100 text-teal-800">
+            <Building2 className="w-4 h-4" />
+          </span>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Infrastructure Project Metrics</h2>
+            <p className="text-xs text-slate-500">Derived from registered infrastructure projects only.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="text-[11px] text-slate-500 mb-1">Total Projects</div>
+            <div className="text-2xl font-extrabold text-slate-900">{infrastructureProjects.length}</div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="text-[11px] text-slate-500 mb-1">Active Projects</div>
+            <div className="text-2xl font-extrabold text-orange-600">
+              {infrastructureProjects.filter((p) => p.status === 'In Progress').length}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="text-[11px] text-slate-500 mb-1">Delayed Projects</div>
+            <div className="text-2xl font-extrabold text-rose-600">
+              {infrastructureProjects.filter((p) => p.status === 'Delayed').length}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="text-[11px] text-slate-500 mb-1">Completed Projects</div>
+            <div className="text-2xl font-extrabold text-emerald-700">
+              {infrastructureProjects.filter((p) => p.status === 'Completed').length}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="text-[11px] text-slate-500 mb-1">Overall Progress</div>
+            <div className="text-2xl font-extrabold text-teal-700">
+              {infrastructureProjects.length > 0
+                ? `${Math.round(
+                    infrastructureProjects.reduce((sum, p) => sum + (p.progressPercent || 0), 0) /
+                      infrastructureProjects.length
+                  )}%`
+                : '0%'}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -7,6 +7,26 @@ export type UserRole =
   | 'admin' 
   | 'super_admin';
 
+export const getRoleDisplayName = (role: UserRole | string): string => {
+  const normalizedRole = String(role || 'citizen');
+
+  switch (normalizedRole) {
+    case 'citizen':
+      return 'Resident';
+    case 'worker':
+    case 'field_officer':
+      return 'Field Officer';
+    case 'higher_official':
+    case 'department_officer':
+      return 'Civic Administrator';
+    case 'admin':
+    case 'super_admin':
+      return 'System Administrator';
+    default:
+      return normalizedRole.replace(/_/g, ' ');
+  }
+};
+
 export type ComplaintCategory =
   | 'Garbage'
   | 'Pothole'
@@ -185,6 +205,7 @@ export interface Complaint {
     email?: string;
   };
   department?: MunicipalDepartment;
+  projectId?: string;
   assignedOfficer?: AssignedOfficer;
   workerProof?: WorkerProof;
   verificationDetails?: VerificationDetails;
@@ -328,3 +349,58 @@ export interface DepartmentInfo {
   avgResolutionDays: number;
   slaComplianceRate: number; // percentage
 }
+
+export type InfrastructureProjectType =
+  | 'Road'
+  | 'Drainage'
+  | 'Streetlight'
+  | 'Park'
+  | 'Bus Stop'
+  | 'School'
+  | 'Public Building';
+
+export type InfrastructureProjectStatus =
+  | 'Planned'
+  | 'In Progress'
+  | 'Delayed'
+  | 'Completed';
+
+export interface InfrastructureProject {
+  id: string;
+  name: string;
+  type: InfrastructureProjectType;
+  department: MunicipalDepartment;
+  contractor: string;
+  location: string;
+  ward: string;
+  lat: number;
+  lng: number;
+  budget: number;
+  startDate: string;
+  expectedCompletionDate: string;
+  progressPercent: number;
+  status: InfrastructureProjectStatus;
+  description: string;
+  photos?: string[];
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+}
+
+export type InfrastructureProjectInput = {
+  name: string;
+  type: InfrastructureProjectType;
+  department: MunicipalDepartment;
+  contractor: string;
+  location: string;
+  ward: string;
+  lat: number;
+  lng: number;
+  budget: number;
+  startDate: string;
+  expectedCompletionDate: string;
+  progressPercent: number;
+  status: InfrastructureProjectStatus;
+  description: string;
+  photos?: string[];
+};

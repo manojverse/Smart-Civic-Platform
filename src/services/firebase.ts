@@ -23,6 +23,8 @@ import {
   signInAnonymously,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
@@ -35,6 +37,16 @@ export const db = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestor
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);
+
+export const googleClientId = (import.meta as any).env?.VITE_FIREBASE_GOOGLE_CLIENT_ID || '';
+export const isGoogleAuthConfigured = Boolean(googleClientId && firebaseConfigData?.authDomain);
+
+export const googleProvider = isGoogleAuthConfigured ? new GoogleAuthProvider() : null;
+if (googleProvider) {
+  googleProvider.setCustomParameters({
+    prompt: 'select_account',
+  });
+}
 
 // Test connection per Firebase integration guidelines
 export async function testFirestoreConnection(): Promise<boolean> {
@@ -74,4 +86,6 @@ export {
   signInAnonymously,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 };

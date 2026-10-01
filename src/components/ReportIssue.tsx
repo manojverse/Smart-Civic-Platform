@@ -31,6 +31,7 @@ import { analyzePhotoAuthenticity } from '../services/imageAuthenticityService';
 import { AIVerificationCard } from './AIVerificationCard';
 import { PhotoAuthenticityCard } from './PhotoAuthenticityCard';
 import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
+import { StateGovtLogo, CityCorpLogo } from './Logos';
 
 const CATEGORIES: { name: ComplaintCategory; icon: string; desc: string }[] = [
   { name: 'Pothole', icon: '🕳️', desc: 'Road craters, dips & damaged tarmac' },

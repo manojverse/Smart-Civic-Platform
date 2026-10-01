@@ -10,21 +10,23 @@ import {
 } from 'lucide-react';
 import { LeafletMap } from './LeafletMap';
 import { useCivic } from '../context/CivicContext';
-import { Complaint, ComplaintCategory, ComplaintStatus, Priority } from '../types';
+import { Complaint, ComplaintCategory, ComplaintStatus, Priority, InfrastructureProject } from '../types';
 import { WARDS } from '../data/seedData';
 
 interface CivicMapViewProps {
   onSelectComplaint: (complaint: Complaint) => void;
+  onSelectProject?: (project: InfrastructureProject) => void;
 }
 
-export const CivicMapView: React.FC<CivicMapViewProps> = ({ onSelectComplaint }) => {
-  const { complaints } = useCivic();
+export const CivicMapView: React.FC<CivicMapViewProps> = ({ onSelectComplaint, onSelectProject }) => {
+  const { complaints, infrastructureProjects } = useCivic();
 
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [priorityFilter, setPriorityFilter] = useState<string>('All');
   const [wardFilter, setWardFilter] = useState<string>('All');
   const [showHotspots, setShowHotspots] = useState(true);
+  const [mapLayer, setMapLayer] = useState<'complaints' | 'projects' | 'both'>('complaints');
 
   // Filter complaints
   const filteredComplaints = complaints.filter((c) => {
@@ -53,6 +55,32 @@ export const CivicMapView: React.FC<CivicMapViewProps> = ({ onSelectComplaint })
 
         {/* Hotspot Toggle */}
         <div className="flex items-center gap-3">
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center text-[11px]">
+            <button
+              onClick={() => setMapLayer('complaints')}
+              className={`px-2.5 py-1.5 rounded-lg font-medium ${
+                mapLayer === 'complaints' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
+            >
+              Complaints
+            </button>
+            <button
+              onClick={() => setMapLayer('projects')}
+              className={`px-2.5 py-1.5 rounded-lg font-medium ${
+                mapLayer === 'projects' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
+            >
+              Projects
+            </button>
+            <button
+              onClick={() => setMapLayer('both')}
+              className={`px-2.5 py-1.5 rounded-lg font-medium ${
+                mapLayer === 'both' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
+            >
+              Both
+            </button>
+          </div>
           <button
             onClick={() => setShowHotspots(!showHotspots)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs border ${
@@ -148,9 +176,11 @@ export const CivicMapView: React.FC<CivicMapViewProps> = ({ onSelectComplaint })
       <div className="space-y-4">
         <LeafletMap
           height="540px"
-          complaints={filteredComplaints}
-          showHeatspots={showHotspots}
+          complaints={mapLayer === 'projects' ? [] : filteredComplaints}
+          showHeatspots={mapLayer === 'projects' ? false : showHotspots}
           onSelectComplaint={onSelectComplaint}
+          infrastructureProjects={mapLayer === 'complaints' ? [] : infrastructureProjects}
+          onSelectProject={onSelectProject}
         />
 
         {/* Legend Strip */}
@@ -180,7 +210,8 @@ export const CivicMapView: React.FC<CivicMapViewProps> = ({ onSelectComplaint })
           </div>
 
           <div className="text-[11px] text-slate-400">
-            Showing <strong>{filteredComplaints.length}</strong> geolocated civic markers
+            Showing <strong>{mapLayer === 'projects' ? 0 : filteredComplaints.length}</strong> complaint
+            {mapLayer !== 'complaints' ? ` · ${infrastructureProjects.length} project` : ''} markers
           </div>
         </div>
       </div>

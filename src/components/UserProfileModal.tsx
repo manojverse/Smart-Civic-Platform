@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { DEMO_USERS } from '../data/seedData';
-import { UserRole } from '../types';
+import { getRoleDisplayName, UserRole } from '../types';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -43,9 +43,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
           </div>
           <div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
-              {currentUser.role.replace('_', ' ')}
+              {getRoleDisplayName(currentUser.role)}
             </span>
-            <h3 className="text-lg font-bold text-slate-900 mt-1">{currentUser.name}</h3>
+            <h3 className="text-lg font-bold text-slate-900 mt-1">{getRoleDisplayName(currentUser.role)}</h3>
             <p className="text-xs text-slate-500">{currentUser.email}</p>
           </div>
         </div>
@@ -108,8 +108,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                 }`}
               >
-                <div className="line-clamp-1">{user.name}</div>
-                <div className="text-[10px] text-slate-500 capitalize">{user.role.replace('_', ' ')}</div>
+                <div className="line-clamp-1">{getRoleDisplayName(user.role)}</div>
+                <div className="text-[10px] text-slate-500">Role switch</div>
               </button>
             ))}
           </div>

@@ -23,11 +23,12 @@ import {
   ShieldCheck,
   LayoutDashboard,
   FolderOpen,
+  HardHat,
 } from 'lucide-react';
 import { SmartCivicHeader } from './Logos';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
-import { UserRole } from '../types';
+import { getRoleDisplayName, UserRole } from '../types';
 import { DEMO_USERS } from '../data/seedData';
 
 interface NavbarProps {
@@ -67,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
     ? 'text-blue-600 bg-blue-50 border-blue-200'
     : 'text-emerald-600 bg-emerald-50 border-emerald-200';
 
-  const roleLabel = currentUser.role.replace(/_/g, ' ');
+  const roleLabel = getRoleDisplayName(currentUser.role);
 
   return (
     <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -160,6 +161,19 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             >
               <MapPin className="w-4 h-4" />
               <span>Civic Map</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('projects')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                currentTab === 'projects'
+                  ? 'bg-teal-50 text-teal-700 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+              aria-current={currentTab === 'projects' ? 'page' : undefined}
+            >
+              <HardHat className="w-4 h-4 text-teal-600" />
+              <span>Projects</span>
             </button>
 
             <button
@@ -431,8 +445,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                             }`}
                           >
                             <div>
-                              <div className="font-medium">{u.name}</div>
-                              <div className="text-[10px] text-slate-400 capitalize">{u.role.replace(/_/g, ' ')}</div>
+                              <div className="font-medium">{getRoleDisplayName(u.role)}</div>
+                              <div className="text-[10px] text-slate-400">Role profile</div>
                             </div>
                             {currentUser.role === u.role && (
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -495,6 +509,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'map' ? 'font-bold text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900'}`}
         >
           Civic Map
+        </button>
+        <button
+          onClick={() => setCurrentTab('projects')}
+          className={`px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${currentTab === 'projects' ? 'font-bold text-teal-700 bg-teal-50' : 'text-slate-600 hover:text-slate-900'}`}
+        >
+          Projects
         </button>
         <button
           onClick={() => setCurrentTab('analytics')}

@@ -94,6 +94,15 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
                   <span>{t.navMap}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </button>
+
+                <button
+                  onClick={() => onNavigate('projects')}
+                  className="flex items-center gap-2 text-slate-300 hover:text-white font-medium text-xs sm:text-sm px-3.5 py-3 sm:py-3.5 rounded-xl transition-colors hover:bg-white/5"
+                >
+                  <Building2 className="w-4 h-4 text-teal-400" />
+                  <span>Projects</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
               </div>
             </div>
 

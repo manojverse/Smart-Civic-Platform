@@ -220,12 +220,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => setRole(e.target.value as UserRole)}
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   >
-                    <option value="citizen">Citizen (Paurudu)</option>
-                    <option value="worker">Field Worker / Technician</option>
-                    <option value="higher_official">Higher Official (Verification Authority)</option>
-                    <option value="field_officer">Field Engineer / Inspector</option>
-                    <option value="department_officer">Dept. Head Officer</option>
-                    <option value="admin">Municipal Commissioner / Admin</option>
+                    <option value="citizen">Resident</option>
+                    <option value="worker">Field Officer</option>
+                    <option value="higher_official">Civic Administrator</option>
+                    <option value="field_officer">Field Officer</option>
+                    <option value="department_officer">Civic Administrator</option>
+                    <option value="admin">System Administrator</option>
                   </select>
                 </div>
 
@@ -332,32 +332,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => handleQuickDemo('citizen')}
                 className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-left transition-colors"
               >
-                <div className="text-xs font-bold text-slate-800">Citizen</div>
-                <div className="text-[10px] text-slate-500">Deepika Rao</div>
+                <div className="text-xs font-bold text-slate-800">Resident</div>
+                <div className="text-[10px] text-slate-500">Citizen Role</div>
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDemo('worker')}
                 className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-left transition-colors"
               >
-                <div className="text-xs font-bold text-amber-700">Field Worker</div>
-                <div className="text-[10px] text-slate-500">Venkata Ramana</div>
+                <div className="text-xs font-bold text-amber-700">Field Officer</div>
+                <div className="text-[10px] text-slate-500">Operations Role</div>
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDemo('higher_official')}
                 className="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-left transition-colors"
               >
-                <div className="text-xs font-bold text-indigo-700">Higher Official</div>
-                <div className="text-[10px] text-slate-500">Dr. M. K. Varma</div>
+                <div className="text-xs font-bold text-indigo-700">Civic Administrator</div>
+                <div className="text-[10px] text-slate-500">Leadership Role</div>
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDemo('admin')}
                 className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-left transition-colors"
               >
-                <div className="text-xs font-bold text-blue-700">Admin</div>
-                <div className="text-[10px] text-slate-500">Commissioner</div>
+                <div className="text-xs font-bold text-blue-700">System Administrator</div>
+                <div className="text-[10px] text-slate-500">Admin Role</div>
               </button>
             </div>
           </div>
