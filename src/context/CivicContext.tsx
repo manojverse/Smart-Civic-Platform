@@ -19,7 +19,7 @@ const signUpWithEmail = async (
   const cleanEmail = email.trim().toLowerCase();
 
   try {
-    // 1. Create Firebase Authentication account
+    // Create Firebase Authentication account
     const cred = await createUserWithEmailAndPassword(
       auth,
       cleanEmail,
@@ -32,16 +32,15 @@ const signUpWithEmail = async (
     // Public signup is always Citizen
     const safeRole: UserRole = 'citizen';
 
-    // 2. Create Firestore user profile
+    // Create user profile for Firestore
     const newUser: RegisteredUserRecord = {
-      // Firebase UID is used as the document/user ID
+      // Firebase Authentication UID
       id: firebaseUid,
 
-      // IMPORTANT:
-      // Firestore security rules validate this field
+      // Required by Firestore security rules
       uid: firebaseUid,
 
-      // Keep firebaseUid for application compatibility
+      // Keep Firebase UID for application compatibility
       firebaseUid,
 
       name: profile.name.trim(),
@@ -53,7 +52,7 @@ const signUpWithEmail = async (
         profile.ward ||
         'Ward 1 - Fort Road & Royal Palace Quarter',
 
-      // Users signing up publicly are Citizens
+      // Public users can register only as Citizen
       role: safeRole,
 
       department: profile.department,
@@ -72,7 +71,7 @@ const signUpWithEmail = async (
       submittedComplaintsCount: 0,
     };
 
-    // 3. Save profile to Firestore
+    // Save user profile to Firestore
     try {
       await setDoc(
         doc(db, 'users', firebaseUid),
@@ -85,8 +84,7 @@ const signUpWithEmail = async (
         firestoreErr
       );
 
-      // Firebase Auth account was created,
-      // but Firestore profile failed.
+      // Remove Firebase auth session if Firestore profile creation fails
       await signOut(auth).catch(() => undefined);
 
       throw new Error(
@@ -94,10 +92,11 @@ const signUpWithEmail = async (
       );
     }
 
-    // 4. Update local application state
+    // Update current user
     setCurrentUser(newUser);
     setIsAuthenticated(true);
 
+    // Update registered users list
     setRegisteredUsers((prev) => {
       const next = prev.filter(
         (u) => u.id !== firebaseUid
@@ -106,7 +105,7 @@ const signUpWithEmail = async (
       return [newUser, ...next];
     });
 
-    // 5. Add audit log
+    // Add audit log
     addAuditLog({
       user: newUser.name,
       role: newUser.role,
@@ -114,7 +113,7 @@ const signUpWithEmail = async (
       details: 'New citizen account registered successfully.',
     });
 
-    // 6. Show success message
+    // Success notification
     showToast(
       'Account Registered',
       `Welcome to Smart Civic, ${newUser.name}!`,
