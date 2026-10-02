@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getPortalRole } from '../types';
 
 interface BottomNavProps {
   currentTab: string;
@@ -79,14 +80,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
 
         {/* Authority / Role Portal */}
         <button
-          onClick={() => setCurrentTab('authority')}
+          onClick={() => {
+            const portalRole = getPortalRole(currentUser.role);
+            if (portalRole === 'admin') setCurrentTab('admin-portal');
+            else if (portalRole === 'staff') setCurrentTab('staff-portal');
+            else setCurrentTab('home');
+          }}
           className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
-            currentTab === 'authority' ? 'text-indigo-600 font-bold' : 'text-slate-500'
+            ['authority', 'staff-portal', 'admin-portal', 'worker-portal', 'official-portal'].includes(currentTab)
+              ? 'text-indigo-600 font-bold'
+              : 'text-slate-500'
           }`}
           aria-label="Portal"
         >
           <Building2 className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5 whitespace-nowrap">{getPortalLabel()}</span>
+          <span className="text-[10px] mt-0.5 whitespace-nowrap">
+            {getPortalRole(currentUser.role) === 'admin' ? 'Admin' : 
+             getPortalRole(currentUser.role) === 'staff' ? 'Portal' : 'Home'}
+          </span>
         </button>
       </div>
     </div>

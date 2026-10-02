@@ -450,14 +450,14 @@ export const ComplaintTracker: React.FC = () => {
                         {(localPhotoAnalysis || activeComplaint.photoAnalysis) && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              (localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict === 'GENUINE_EVIDENCE'
+                              (localPhotoAnalysis || activeComplaint.photoAnalysis)?.imageFraudVerdict === 'AUTHENTIC_FIELD_CAPTURE'
                                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : (localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict === 'AI_GENERATED_DETECTED'
+                                : (localPhotoAnalysis || activeComplaint.photoAnalysis)?.imageFraudVerdict === 'SUSPECTED_AI_GENERATED'
                                 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                 : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                             }`}
                           >
-                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.verdict.replace(/_/g, ' ')}
+                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.imageFraudVerdict?.replace(/_/g, ' ')}
                           </span>
                         )}
                       </div>
@@ -465,14 +465,14 @@ export const ComplaintTracker: React.FC = () => {
                       {(localPhotoAnalysis || activeComplaint.photoAnalysis) ? (
                         <div className="mt-2 space-y-1.5">
                           <p className="text-[11px] text-slate-300">
-                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.explanation}
+                            {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.relevanceExplanation}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800">
-                            <span>AI Probability: {(((localPhotoAnalysis || activeComplaint.photoAnalysis)?.aiGeneratedProbability ?? 0) * 100).toFixed(0)}%</span>
+                            <span>AI Generated: {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.isAiGenerated ? 'YES' : 'NO'}</span>
                             <span>•</span>
-                            <span>Authenticity Score: {(((localPhotoAnalysis || activeComplaint.photoAnalysis)?.authenticityScore ?? 0) * 100).toFixed(0)}%</span>
+                            <span>Authenticity Score: {((localPhotoAnalysis || activeComplaint.photoAnalysis)?.authenticityScore ?? 0)}%</span>
                             <span>•</span>
-                            <span>Category Match: {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.matchesReportedCategory ? 'VERIFIED' : 'MISMATCH'}</span>
+                            <span>Category Match: {(localPhotoAnalysis || activeComplaint.photoAnalysis)?.relevanceToCivicIssue === 'RELEVANT_MATCH' ? 'VERIFIED' : 'MISMATCH'}</span>
                           </div>
                         </div>
                       ) : (
@@ -775,9 +775,25 @@ export const ComplaintTracker: React.FC = () => {
                 </div>
               </div>
             </>
+          ) : complaints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <span className="text-2xl">📋</span>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-slate-600 text-sm">No complaints yet</p>
+                <p className="text-xs text-slate-400 mt-1">Submit a complaint from the Report Issue page to track it here.</p>
+              </div>
+            </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
-              Select a complaint from the left panel to inspect tracking details.
+            <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <span className="text-2xl">👈</span>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-slate-600 text-sm">Select a complaint</p>
+                <p className="text-xs text-slate-400 mt-1">Choose a complaint from the list on the left to view its details and status.</p>
+              </div>
             </div>
           )}
         </div>

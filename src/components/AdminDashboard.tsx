@@ -36,8 +36,8 @@ import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
 export const AdminDashboard: React.FC = () => {
   const {
     currentUser,
-    allUsers,
-    approveStaffUser,
+    registeredUsers,
+    approveUser,
     auditLogs,
     complaints,
     setSelectedComplaint,
@@ -142,12 +142,12 @@ export const AdminDashboard: React.FC = () => {
   });
 
   // Filtering users
-  const filteredUsers = allUsers.filter((u) => {
+  const filteredUsers = registeredUsers.filter((u) => {
     if (userRoleFilter === 'all') return true;
     return u.role === userRoleFilter;
   });
 
-  const pendingApprovals = allUsers.filter((u) => u.approvalStatus === 'pending');
+  const pendingApprovals = registeredUsers.filter((u) => u.approvalStatus === 'pending');
 
   // Filtering audit logs
   const filteredAuditLogs = auditLogs.filter((log) => {
@@ -155,7 +155,7 @@ export const AdminDashboard: React.FC = () => {
     const q = auditSearch.toLowerCase();
     return (
       log.action.toLowerCase().includes(q) ||
-      log.userName.toLowerCase().includes(q) ||
+      (log.user && log.user.toLowerCase().includes(q)) ||
       (log.complaintId && log.complaintId.toLowerCase().includes(q)) ||
       log.details.toLowerCase().includes(q)
     );
@@ -168,8 +168,8 @@ export const AdminDashboard: React.FC = () => {
       log.id,
       new Date(log.timestamp).toISOString(),
       log.action,
-      `"${log.userName}"`,
-      log.userRole,
+      `"${log.user}"`,
+      log.role,
       log.complaintId || 'N/A',
       `"${log.details.replace(/"/g, '""')}"`,
     ]);
@@ -970,7 +970,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {isPending ? (
                         <button
-                          onClick={() => approveStaffUser(user.id)}
+                          onClick={() => approveUser(user.id)}
                           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
                         >
                           <UserCheck className="w-4 h-4" />

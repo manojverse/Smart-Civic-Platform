@@ -51,7 +51,7 @@ const PROJECT_STATUS_COLORS: Record<InfrastructureProjectStatus, string> = {
 };
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
-  center = [12.9716, 77.5946],
+  center = [18.1067, 83.3956],
   zoom = 13,
   height = '420px',
   isPicker = false,
@@ -67,6 +67,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
   const pickerMarkerRef = useRef<L.Marker | null>(null);
+  const onLocationSelectRef = useRef<((lat: number, lng: number) => void) | undefined>(onLocationSelect);
+
+  useEffect(() => {
+    onLocationSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
 
   // Initialize Map
   useEffect(() => {
@@ -96,7 +101,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       // Handle map click in picker mode
       if (isPicker && onLocationSelect) {
         map.on('click', (e: L.LeafletMouseEvent) => {
-          onLocationSelect(e.latlng.lat, e.latlng.lng);
+          if (onLocationSelectRef.current) {
+            onLocationSelectRef.current(e.latlng.lat, e.latlng.lng);
+          }
         });
       }
     }
@@ -149,8 +156,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
-        if (onLocationSelect) {
-          onLocationSelect(pos.lat, pos.lng);
+        if (onLocationSelectRef.current) {
+          onLocationSelectRef.current(pos.lat, pos.lng);
         }
       });
 

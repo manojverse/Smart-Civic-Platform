@@ -1,30 +1,63 @@
-export type UserRole = 
-  | 'citizen' 
+export type UserRole =
+  | 'citizen'
+  | 'staff'
+  | 'admin'
   | 'worker'
-  | 'field_officer' 
+  | 'field_officer'
   | 'higher_official'
-  | 'department_officer' 
-  | 'admin' 
+  | 'department_officer'
   | 'super_admin';
 
+export const normalizeUserRole = (role?: string | UserRole): UserRole => {
+  const normalizedRole = String(role || 'citizen').toLowerCase();
+
+  if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff'].includes(normalizedRole)) {
+    return 'staff';
+  }
+
+  if (['admin', 'super_admin'].includes(normalizedRole)) {
+    return 'admin';
+  }
+
+  return 'citizen';
+};
+
 export const getRoleDisplayName = (role: UserRole | string): string => {
-  const normalizedRole = String(role || 'citizen');
+  const normalizedRole = normalizeUserRole(role);
 
   switch (normalizedRole) {
     case 'citizen':
-      return 'Resident';
-    case 'worker':
-    case 'field_officer':
-      return 'Field Officer';
-    case 'higher_official':
-    case 'department_officer':
-      return 'Civic Administrator';
+      return 'Citizen';
+    case 'staff':
+      return 'Staff / Officer';
     case 'admin':
-    case 'super_admin':
-      return 'System Administrator';
+      return 'Admin';
     default:
-      return normalizedRole.replace(/_/g, ' ');
+      return 'Citizen';
   }
+};
+
+// ─── Three-Portal Role System ───────────────────────────────────────────────
+// Maps all internal roles to exactly 3 portal categories
+export type PortalRole = 'citizen' | 'staff' | 'admin';
+
+export const getPortalRole = (role: UserRole | string | undefined): PortalRole => {
+  const r = String(role || 'citizen').toLowerCase();
+  if (r === 'admin' || r === 'super_admin') return 'admin';
+  if (r === 'worker' || r === 'field_officer' || r === 'higher_official' || r === 'department_officer') return 'staff';
+  return 'citizen';
+};
+
+export const isAdminPortalRole = (role: UserRole | string | undefined): boolean =>
+  getPortalRole(role) === 'admin';
+
+export const isStaffPortalRole = (role: UserRole | string | undefined): boolean =>
+  getPortalRole(role) === 'staff';
+
+export const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
+  citizen: 'Citizen',
+  staff: 'Staff / Officer',
+  admin: 'Admin',
 };
 
 export type ComplaintCategory =

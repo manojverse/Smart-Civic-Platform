@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   LogIn,
@@ -33,8 +33,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = 'signin',
 }) => {
-  const { signInWithEmail, signUpWithEmail, signInWithDemoUser, authError, isAuthLoading } = useCivic();
+  const { signInWithEmail, signUpWithEmail, authError, isAuthLoading } = useCivic();
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -46,6 +52,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [role, setRole] = useState<UserRole>('citizen');
   const [department, setDepartment] = useState<MunicipalDepartment>('Solid Waste Management');
   const [localError, setLocalError] = useState<string | null>(null);
+
+  const forcedCitizenRole = 'citizen';
 
   if (!isOpen) return null;
 
@@ -73,8 +81,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           name,
           phone: phone || '+91 8922 245000',
           ward,
-          role,
-          department: role === 'field_officer' || role === 'department_officer' ? department : undefined,
+          role: forcedCitizenRole,
+          department: undefined,
         });
       } else {
         await signInWithEmail(email, password);
@@ -83,16 +91,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.error('Auth submit error:', err);
       setLocalError(err.message || 'Authentication failed. Please check your credentials.');
-    }
-  };
-
-  const handleQuickDemo = async (demoRole: UserRole) => {
-    setLocalError(null);
-    try {
-      await signInWithDemoUser(demoRole);
-      onClose();
-    } catch (err: any) {
-      setLocalError(err.message || 'Quick sign-in error.');
     }
   };
 
@@ -174,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="text-[11px] text-amber-800 leading-relaxed">
                   {(localError || authError)?.includes('operation-not-allowed')
-                    ? 'Email/Password sign-in provider is disabled in the Firebase Console (under Authentication > Sign-in method). Smart Civic has automatically switched to the Live Cloud Firestore Database so your account and session continue without disruption.'
+                    ? 'Email/Password sign-in is disabled in the Firebase Console. Enable it under Authentication > Sign-in method for project sound-quarter-q2sm5.'
                     : localError || authError}
                 </div>
               </div>
@@ -212,55 +210,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Role / Account Type</label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                  >
-                    <option value="citizen">Resident</option>
-                    <option value="worker">Field Officer</option>
-                    <option value="higher_official">Civic Administrator</option>
-                    <option value="field_officer">Field Officer</option>
-                    <option value="department_officer">Civic Administrator</option>
-                    <option value="admin">System Administrator</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Smart City Ward</label>
-                  <select
-                    value={ward}
-                    onChange={(e) => setWard(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                  >
-                    {WARDS.map((w) => (
-                      <option key={w} value={w}>
-                        {w}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Smart City Ward</label>
+                <select
+                  value={ward}
+                  onChange={(e) => setWard(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                >
+                  {WARDS.map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {(role === 'field_officer' || role === 'department_officer') && (
+              {/* Role is always CITIZEN for public registration */}
+              <div className="flex items-start gap-2.5 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                <span className="text-emerald-600 mt-0.5">✓</span>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Municipal Department</label>
-                  <select
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value as MunicipalDepartment)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                  >
-                    {DEPARTMENTS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
+                  <p className="text-xs font-bold text-emerald-800">Citizen Account</p>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                    Public accounts are registered as Citizens. Staff and Admin accounts are provisioned by authorized system administrators.
+                  </p>
                 </div>
-              )}
+              </div>
             </>
           )}
 
@@ -321,46 +295,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </button>
 
-          {/* Quick Demo Credentials Strip */}
-          <div className="pt-3 border-t border-slate-100">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
-              Quick 1-Click Demo Profiles (Saved to Cloud DB)
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('citizen')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-slate-800">Resident</div>
-                <div className="text-[10px] text-slate-500">Citizen Role</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('worker')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-amber-700">Field Officer</div>
-                <div className="text-[10px] text-slate-500">Operations Role</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('higher_official')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-indigo-700">Civic Administrator</div>
-                <div className="text-[10px] text-slate-500">Leadership Role</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('admin')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-left transition-colors"
-              >
-                <div className="text-xs font-bold text-blue-700">System Administrator</div>
-                <div className="text-[10px] text-slate-500">Admin Role</div>
-              </button>
-            </div>
-          </div>
         </form>
       </div>
     </div>

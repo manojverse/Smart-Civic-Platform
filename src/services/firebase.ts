@@ -31,9 +31,8 @@ import firebaseConfigData from '../../firebase-applet-config.json';
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfigData) : getApp();
 
-// Initialize Firestore with specific databaseId if provided
-const firestoreDbId = (firebaseConfigData as any).firestoreDatabaseId;
-export const db = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
+// Initialize Firestore against the actual default database in Firebase Console.
+export const db = getFirestore(app);
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);

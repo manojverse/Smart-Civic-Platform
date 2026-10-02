@@ -11,8 +11,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
-import { DEMO_USERS } from '../data/seedData';
-import { getRoleDisplayName, UserRole } from '../types';
+import { getRoleDisplayName } from '../types';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -20,7 +19,7 @@ interface UserProfileModalProps {
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, switchRole, complaints } = useCivic();
+  const { currentUser, complaints } = useCivic();
 
   if (!isOpen) return null;
 
@@ -86,32 +85,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
           <div className="flex justify-between items-center pt-2 border-t border-slate-200">
             <span className="text-slate-500">Civic Activity:</span>
             <span className="font-bold text-emerald-700">{userComplaints.length} Logged Issues</span>
-          </div>
-        </div>
-
-        {/* Switch Persona Shortcuts */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold text-slate-700 mb-2">
-            Switch Persona for Demo:
-          </label>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {DEMO_USERS.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => {
-                  switchRole(user.role as UserRole);
-                  onClose();
-                }}
-                className={`p-2 rounded-xl text-left border text-xs transition-colors ${
-                  currentUser.role === user.role
-                    ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-900'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                }`}
-              >
-                <div className="line-clamp-1">{getRoleDisplayName(user.role)}</div>
-                <div className="text-[10px] text-slate-500">Role switch</div>
-              </button>
-            ))}
           </div>
         </div>
 

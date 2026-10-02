@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CivicProvider, useCivic } from './context/CivicContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
@@ -30,6 +30,7 @@ const CivicApp: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const {
+    currentUser,
     setSelectedComplaint,
     setSelectedProject,
     activeToast,
@@ -41,9 +42,35 @@ const CivicApp: React.FC = () => {
     isAuthenticated,
   } = useCivic();
 
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
+  const normalizedRole = (() => {
+    const role = String(currentUser?.role || 'citizen').toLowerCase();
+    if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff'].includes(role)) return 'staff';
+    if (['admin', 'super_admin'].includes(role)) return 'admin';
+    return 'citizen';
+  })();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    if (normalizedRole === 'citizen' && ['authority', 'users-db', 'admin-portal', 'worker-portal', 'official-portal'].includes(currentTab)) {
+      setCurrentTab('home');
+    }
+
+    if (normalizedRole === 'staff' && ['users-db', 'admin-portal'].includes(currentTab)) {
+      setCurrentTab('tracking');
+    }
+  }, [currentTab, isAuthenticated, normalizedRole]);
+
+  const prevAuthRef = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated && !prevAuthRef.current) {
+      prevAuthRef.current = true;
+      if (normalizedRole === 'admin') setCurrentTab('admin-portal');
+      else if (normalizedRole === 'staff') setCurrentTab('worker-portal');
+      else setCurrentTab('home');
+    }
+    if (!isAuthenticated) prevAuthRef.current = false;
+  }, [isAuthenticated, normalizedRole]);
 
   const handleTrackComplaint = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
@@ -53,15 +80,10 @@ const CivicApp: React.FC = () => {
     setCurrentTab('tracking');
   };
 
-  return (
+  const content = !isAuthenticated ? (
+    <LoginPage />
+  ) : (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
-      {/* Real-Time User Authentication Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={closeAuthModal}
-        initialMode={authModalMode}
-      />
-
       {/* Real-time Event Toast Banner */}
       {activeToast && (
         <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-700 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-3">
@@ -146,9 +168,60 @@ const CivicApp: React.FC = () => {
           <SmartCityServices onReportIssue={() => setCurrentTab('report')} />
         )}
         {currentTab === 'future' && <FutureScope />}
-        {currentTab === 'worker-portal' && <WorkerDashboard />}
-        {currentTab === 'official-portal' && <HigherOfficialDashboard />}
-        {currentTab === 'admin-portal' && <AdminDashboard />}
+        {currentTab === 'worker-portal' && (
+          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
+            <WorkerDashboard />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+              <div className="text-4xl mb-3">🚫</div>
+              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
+              <p className="text-sm text-slate-500 mt-1">Staff / Officer credentials required.</p>
+              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            </div>
+          )
+        )}
+        {currentTab === 'official-portal' && (
+          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
+            <HigherOfficialDashboard />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+              <div className="text-4xl mb-3">🚫</div>
+              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
+              <p className="text-sm text-slate-500 mt-1">Officer credentials required.</p>
+              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            </div>
+          )
+        )}
+        {currentTab === 'admin-portal' && (
+          normalizedRole === 'admin' ? (
+            <AdminDashboard />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+              <div className="text-4xl mb-3">🚫</div>
+              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
+              <p className="text-sm text-slate-500 mt-1">Administrator credentials required.</p>
+              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            </div>
+          )
+        )}
+        {currentTab === 'citizen-portal' && (
+          <CivicHome
+            onNavigate={(tab) => setCurrentTab(tab)}
+            onSelectComplaint={handleTrackComplaint}
+          />
+        )}
+        {currentTab === 'staff-portal' && (
+          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
+            <HigherOfficialDashboard />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+              <div className="text-4xl mb-3">🚫</div>
+              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
+              <p className="text-sm text-slate-500 mt-1">Staff / Officer credentials required.</p>
+              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            </div>
+          )
+        )}
       </main>
 
       {/* Floating Bilingual AI Assistant */}
@@ -218,6 +291,17 @@ const CivicApp: React.FC = () => {
         </div>
       </footer>
     </div>
+  );
+
+  return (
+    <>
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
+        initialMode={authModalMode}
+      />
+      {content}
+    </>
   );
 };
 

@@ -1,5 +1,7 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -7,6 +9,122 @@ import { GoogleGenAI, Type } from '@google/genai';
 dotenv.config();
 
 const PORT = 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'smart-civic-dev-secret-change-me';
+
+type AppRole = 'citizen' | 'staff' | 'admin';
+
+type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: AppRole;
+  phone?: string;
+  ward?: string;
+  passwordHash: string;
+  salt: string;
+  createdAt: string;
+};
+
+const AUTH_USERS = new Map<string, AuthUser>();
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        role: AppRole;
+      };
+    }
+  }
+}
+
+function hashPassword(password: string, salt: string): string {
+  return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+}
+
+function buildToken(user: AuthUser): string {
+  return jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    expiresIn: '8h',
+  });
+}
+
+function sanitizeUser(user: AuthUser) {
+  const { passwordHash, salt, ...safeUser } = user;
+  return safeUser;
+}
+
+function getBearerToken(req: express.Request): string | null {
+  const header = req.headers.authorization || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
+
+function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const token = getBearerToken(req);
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { sub: string; email: string; role: AppRole };
+    req.user = {
+      id: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
+}
+
+function requireRole(requiredRole: AppRole) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    if (req.user.role !== requiredRole) {
+      return res.status(403).json({
+        error: `Access denied. This endpoint requires ${requiredRole.toUpperCase()} role.`,
+      });
+    }
+
+    next();
+  };
+}
+
+const createUserRecord = (
+  name: string,
+  email: string,
+  password: string,
+  phone?: string,
+  ward?: string,
+  role: AppRole = 'citizen'
+): AuthUser => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = hashPassword(password, salt);
+
+  return {
+    id: `auth-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name,
+    email: email.trim().toLowerCase(),
+    role,
+    phone,
+    ward,
+    passwordHash,
+    salt,
+    createdAt: new Date().toISOString(),
+  };
+};
+
+const ensurePublicUserRole = (roleValue?: string): AppRole => {
+  const normalized = String(roleValue || 'citizen').toLowerCase();
+  if (normalized === 'staff') return 'citizen';
+  if (normalized === 'admin') return 'citizen';
+  return 'citizen';
+};
 
 async function startServer() {
   const app = express();
@@ -34,9 +152,145 @@ async function startServer() {
       status: 'ok',
       service: 'CivicSense Backend API',
       aiReady: Boolean(process.env.GEMINI_API_KEY),
+      authReady: Boolean(JWT_SECRET),
       timestamp: new Date().toISOString(),
     });
   });
+
+  app.get('/api/auth/config', (req, res) => {
+    res.json({
+      googleConfigured: Boolean(process.env.VITE_FIREBASE_GOOGLE_CLIENT_ID),
+      jwtConfigured: Boolean(process.env.JWT_SECRET),
+      publicRegistrationRole: 'citizen',
+      supportedRoles: ['citizen', 'staff', 'admin'],
+    });
+  });
+
+  app.post('/api/auth/register', (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      const confirmPassword = String(req.body?.confirmPassword || '');
+      const phone = String(req.body?.phone || '').trim();
+      const ward = String(req.body?.ward || '').trim();
+      const requestedRole = String(req.body?.role || 'citizen').toLowerCase();
+
+      if (!name || !email || !password || !confirmPassword) {
+        return res.status(400).json({ error: 'Name, email, password, and confirmation are required.' });
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'Please provide a valid email address.' });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+      }
+
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: 'Password confirmation does not match.' });
+      }
+
+      if (['staff', 'admin'].includes(requestedRole)) {
+        return res.status(400).json({
+          error: 'Public registration is reserved for citizen accounts only. Staff and admin accounts must be provisioned by an authorized administrator.',
+        });
+      }
+
+      if (AUTH_USERS.has(email)) {
+        return res.status(409).json({ error: 'An account with this email already exists.' });
+      }
+
+      const user = createUserRecord(name, email, password, phone || undefined, ward || undefined, ensurePublicUserRole(requestedRole));
+      AUTH_USERS.set(email, user);
+
+      const token = buildToken(user);
+
+      return res.status(201).json({
+        message: 'Public citizen account created successfully.',
+        token,
+        user: sanitizeUser(user),
+      });
+    } catch (error: any) {
+      console.error('Auth register error:', error);
+      return res.status(500).json({ error: error?.message || 'Failed to create account.' });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required.' });
+      }
+
+      const user = AUTH_USERS.get(email);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+
+      const expectedHash = hashPassword(password, user.salt);
+      if (expectedHash !== user.passwordHash) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+
+      const token = buildToken(user);
+      return res.json({
+        message: 'Authentication successful.',
+        token,
+        user: sanitizeUser(user),
+      });
+    } catch (error: any) {
+      console.error('Auth login error:', error);
+      return res.status(500).json({ error: error?.message || 'Failed to sign in.' });
+    }
+  });
+
+  app.get('/api/auth/me', requireAuth, (req, res) => {
+    const email = req.user?.email || '';
+    const user = AUTH_USERS.get(email);
+    if (!user) {
+      return res.status(404).json({ error: 'User session not found.' });
+    }
+    return res.json({ user: sanitizeUser(user) });
+  });
+
+  app.post('/api/admin/users', requireAuth, requireRole('admin'), (req, res) => {
+    try {
+      const name = String(req.body?.name || '').trim();
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      const role = String(req.body?.role || 'staff').toLowerCase();
+
+      if (!name || !email || !password) {
+        return res.status(400).json({ error: 'Name, email, and password are required.' });
+      }
+
+      if (!['staff', 'admin'].includes(role)) {
+        return res.status(400).json({ error: 'Only staff or admin roles may be created through this admin-only endpoint.' });
+      }
+
+      if (AUTH_USERS.has(email)) {
+        return res.status(409).json({ error: 'An account with this email already exists.' });
+      }
+
+      const user = createUserRecord(name, email, password, req.body?.phone, req.body?.ward, role as AppRole);
+      AUTH_USERS.set(email, user);
+
+      return res.status(201).json({
+        message: `Admin-created ${role} account created successfully.`,
+        user: sanitizeUser(user),
+      });
+    } catch (error: any) {
+      console.error('Admin user creation error:', error);
+      return res.status(500).json({ error: error?.message || 'Failed to create admin-managed user.' });
+    }
+  });
+
+  app.use('/api/admin', requireAuth, requireRole('admin'));
 
   // AI Verification & Smart Routing endpoint
   app.post('/api/ai/verify', async (req, res) => {

@@ -12,6 +12,7 @@ import {
   Severity,
   Priority,
   RegisteredUserRecord,
+  normalizeUserRole,
   SmartServiceItem,
   MunicipalAnnouncement,
   AuditLog,
@@ -42,11 +43,13 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   query,
   where,
   onSnapshot,
   updateDoc,
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -59,7 +62,6 @@ interface CivicContextType {
   currentUser: User;
   isAuthenticated: boolean;
   setCurrentUser: (user: User) => void;
-  switchRole: (role: UserRole) => void;
   complaints: Complaint[];
   notifications: CivicNotification[];
   selectedComplaint: Complaint | null;
@@ -102,9 +104,6 @@ interface CivicContextType {
       designation?: string;
       workArea?: string;
     }
-  ) => Promise<void>;
-  signInWithDemoUser: (
-    demoRole: 'citizen' | 'worker' | 'higher_official' | 'admin' | 'field_officer' | 'department_officer'
   ) => Promise<void>;
   signOutUser: () => Promise<void>;
 
@@ -179,7 +178,6 @@ interface CivicContextType {
 
   markNotificationRead: (notifId: string) => void;
   markAllNotificationsRead: () => void;
-  resetDemoData: () => void;
   activeToast: { title: string; message: string; type: string } | null;
   clearToast: () => void;
 }
@@ -188,39 +186,22 @@ const CivicContext = createContext<CivicContextType | undefined>(undefined);
 
 const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v2';
 const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v2';
-const STORAGE_KEY_USER = 'Smart Civic_user_v2';
-const STORAGE_KEY_AUTH = 'Smart Civic_auth_session_v1';
 const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v2';
 const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v2';
 const STORAGE_KEY_PROJECTS = 'Smart Civic_projects_v1';
 
+const DEFAULT_GUEST_USER: User = {
+  id: 'GUEST-DEFAULT',
+  name: 'Smart City Visitor',
+  email: 'visitor@smartcivic.local',
+  role: 'citizen',
+  ward: 'Ward 1 - Fort Road & Royal Palace Quarter',
+};
+
 export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. User state
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_USER);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      id: 'GUEST-DEFAULT',
-      name: 'Smart City Visitor',
-      email: 'visitor@smartcivic.local',
-      role: 'citizen',
-      ward: 'Ward 1 - Fort Road & Royal Palace Quarter',
-    } as User;
-  });
-
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_AUTH);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return false;
-  });
+  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_GUEST_USER);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // 2. Complaints state
   const [complaints, setComplaints] = useState<Complaint[]>(() => {
@@ -303,6 +284,54 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        setCurrentUser(DEFAULT_GUEST_USER);
+        setIsAuthenticated(false);
+        return;
+      }
+
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (!profileDoc.exists()) {
+          setCurrentUser(DEFAULT_GUEST_USER);
+          setIsAuthenticated(false);
+          setAuthError('Your account profile is not configured. Please contact the administrator.');
+          await signOut(auth).catch(() => undefined);
+          return;
+        }
+
+        const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
+        setCurrentUser({
+          id: profile.id,
+          name: profile.name || firebaseUser.displayName || 'Citizen User',
+          email: profile.email || firebaseUser.email || '',
+          role: normalizeUserRole(profile.role || 'citizen'),
+          phone: profile.phone,
+          ward: profile.ward,
+          department: profile.department,
+          employeeId: profile.employeeId,
+          designation: profile.designation,
+          workArea: profile.workArea,
+          approvalStatus: profile.approvalStatus,
+          createdAt: profile.createdAt,
+          lastLoginAt: profile.lastLoginAt || new Date().toISOString(),
+          loginCount: profile.loginCount || 0,
+          isOnline: true,
+        });
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Firebase auth profile load failed:', error);
+        setCurrentUser(DEFAULT_GUEST_USER);
+        setIsAuthenticated(false);
+        setAuthError('Your account profile could not be loaded. Please try again.');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
     setAuthModalMode(mode);
     setAuthError(null);
@@ -347,15 +376,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     []
   );
 
-  // Sync state to local storage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(isAuthenticated));
-  }, [isAuthenticated]);
-
+  // Persistent UI state is allowed; authentication state must come from Firebase only.
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_NOTIFS, JSON.stringify(notifications));
   }, [notifications]);
@@ -536,37 +557,24 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      let uid = `usr_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
-      let isFirebaseAuthSuccessful = false;
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
-        uid = cred.user.uid;
-        isFirebaseAuthSuccessful = true;
-      } catch (authErr: any) {
-        console.warn(
-          'Firebase Auth provider fallback to direct database record:',
-          authErr.code || authErr.message
-        );
-      }
-
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+      const firebaseUid = cred.user.uid;
       const nowIso = new Date().toISOString();
-      const isStaffRole = profile.role === 'worker' || profile.role === 'higher_official';
-      const approvalStatus = isStaffRole ? 'pending' : 'approved';
+      const safeRole: UserRole = 'citizen';
 
       const newUser: RegisteredUserRecord = {
-        id: uid,
-        firebaseUid: isFirebaseAuthSuccessful ? uid : undefined,
+        id: firebaseUid,
+        firebaseUid,
         name: profile.name.trim(),
         email: cleanEmail,
         phone: profile.phone?.trim() || '+91 8922 245000',
         ward: profile.ward || 'Ward 1 - Fort Road & Royal Palace Quarter',
-        role: profile.role,
+        role: safeRole,
         department: profile.department,
         employeeId: profile.employeeId,
         designation: profile.designation,
         workArea: profile.workArea,
-        approvalStatus,
+        approvalStatus: 'approved',
         authProvider: 'password',
         createdAt: nowIso,
         lastLoginAt: nowIso,
@@ -575,43 +583,39 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         submittedComplaintsCount: 0,
       };
 
+      try {
+        await setDoc(doc(db, 'users', firebaseUid), newUser, { merge: true });
+      } catch (firestoreErr) {
+        console.error('Firestore profile creation failed after Firebase auth created the user.', firestoreErr);
+        await signOut(auth).catch(() => undefined);
+        throw new Error('Unable to create your account profile. Please try again or contact the administrator.');
+      }
+
       setCurrentUser(newUser);
       setIsAuthenticated(true);
-      await syncUserToFirestore(newUser);
-
       setRegisteredUsers((prev) => {
-        const index = prev.findIndex((u) => u.email.toLowerCase() === cleanEmail);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = newUser;
-          return updated;
-        }
-        return [newUser, ...prev];
+        const next = prev.filter((u) => u.id !== firebaseUid);
+        return [newUser, ...next];
       });
 
       addAuditLog({
         user: newUser.name,
         role: newUser.role,
         action: 'USER_REGISTERED',
-        details: `New account registered as ${newUser.role}. Status: ${approvalStatus}.`,
+        details: `New citizen account registered successfully.`,
       });
 
-      if (isStaffRole) {
-        showToast(
-          'Account Registered (Pending Approval)',
-          `Your ${profile.role === 'worker' ? 'Worker' : 'Official'} registration is pending administrator verification.`,
-          'info'
-        );
-      } else {
-        showToast(
-          'Account Registered',
-          `Welcome to Smart Civic Smart City, ${newUser.name}!`,
-          'success'
-        );
-      }
+      showToast('Account Registered', `Welcome to Smart Civic, ${newUser.name}!`, 'success');
     } catch (err: any) {
+      const message =
+        err?.code === 'auth/email-already-in-use'
+          ? 'An account with this email already exists.'
+          : err?.code === 'auth/weak-password'
+            ? 'Password must be at least 6 characters long.'
+            : err?.message || 'Could not register user account.';
       console.error('Sign up error:', err);
-      throw new Error(err.message || 'Could not register user account.');
+      setAuthError(message);
+      throw new Error(message);
     } finally {
       setIsAuthLoading(false);
     }
@@ -625,82 +629,68 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cleanIdentifier = rawIdentifier.toLowerCase();
 
     try {
-      let uid = '';
-      let existing: RegisteredUserRecord | undefined;
+      const cred = await signInWithEmailAndPassword(auth, cleanIdentifier, pass);
+      const firebaseUid = cred.user.uid;
+      const profileDoc = await getDoc(doc(db, 'users', firebaseUid));
 
-      if (cleanIdentifier.includes('@')) {
-        try {
-          const cred = await signInWithEmailAndPassword(auth, cleanIdentifier, pass);
-          uid = cred.user.uid;
-        } catch (authErr: any) {
-          console.warn('Firebase Auth email sign-in fallback:', authErr.code || authErr.message);
-        }
-
-        existing = registeredUsers.find(
-          (u) => u.email.toLowerCase() === cleanIdentifier || (uid && u.id === uid)
-        );
-
-        if (!existing) {
-          try {
-            const directDoc = await getDocs(
-              query(collection(db, 'users'), where('email', '==', cleanIdentifier))
-            );
-            if (!directDoc.empty) {
-              existing = { id: directDoc.docs[0].id, ...directDoc.docs[0].data() } as RegisteredUserRecord;
-            }
-          } catch (e) {}
-        }
-      } else {
-        const normalizedInput = cleanIdentifier.replace(/[^a-z0-9]/g, '');
-        existing = registeredUsers.find((u) => {
-          const normalizedName = u.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const normalizedEmailBase = u.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-          return normalizedName === normalizedInput || normalizedEmailBase === normalizedInput;
-        });
+      if (!profileDoc.exists()) {
+        await signOut(auth).catch(() => undefined);
+        const message = 'Your account profile is not configured. Please contact the administrator.';
+        setAuthError(message);
+        throw new Error(message);
       }
 
-      if (!existing) {
-        throw new Error('Invalid username/email or password. Please try again.');
-      }
-
-      try {
-        if (cleanIdentifier.includes('@')) {
-          await signInWithEmailAndPassword(auth, cleanIdentifier, pass);
-        }
-      } catch (authErr: any) {
-        console.warn('Authentication provider returned a non-fatal fallback:', authErr.code || authErr.message);
-      }
-
-      const updatedUser: RegisteredUserRecord = {
-        ...existing,
+      const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
+      const safeUser: User = {
+        id: profile.id,
+        name: profile.name || cred.user.displayName || cleanIdentifier.split('@')[0],
+        email: profile.email || cleanIdentifier,
+        role: normalizeUserRole(profile.role || 'citizen'),
+        phone: profile.phone,
+        ward: profile.ward,
+        department: profile.department,
+        employeeId: profile.employeeId,
+        designation: profile.designation,
+        workArea: profile.workArea,
+        approvalStatus: profile.approvalStatus,
+        createdAt: profile.createdAt,
         lastLoginAt: new Date().toISOString(),
-        loginCount: (existing.loginCount || 1) + 1,
+        loginCount: (profile.loginCount || 0) + 1,
         isOnline: true,
       };
-      setCurrentUser(updatedUser);
-      setIsAuthenticated(true);
-      await syncUserToFirestore(updatedUser);
-      setRegisteredUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-      );
 
-      addAuditLog({
-        user: updatedUser.name,
-        role: updatedUser.role,
-        action: 'USER_LOGIN',
-        details: `User signed in with password authentication.`,
+      setCurrentUser(safeUser);
+      setIsAuthenticated(true);
+      setRegisteredUsers((prev) => {
+        const next = prev.filter((u) => u.id !== safeUser.id);
+        return [{ ...profile, ...safeUser, lastLoginAt: safeUser.lastLoginAt, loginCount: safeUser.loginCount, isOnline: true }, ...next];
       });
 
-      showToast(
-        'Welcome Back',
-        `Logged in as ${updatedUser.name} (${getRoleDisplayName(updatedUser.role)}).`,
-        'success'
-      );
+      await syncUserToFirestore({
+        ...profile,
+        ...safeUser,
+        lastLoginAt: safeUser.lastLoginAt,
+        loginCount: safeUser.loginCount,
+        isOnline: true,
+      });
+
+      addAuditLog({
+        user: safeUser.name,
+        role: safeUser.role,
+        action: 'USER_LOGIN',
+        details: 'User signed in with password authentication.',
+      });
+
+      showToast('Welcome Back', `Logged in as ${safeUser.name} (${getRoleDisplayName(safeUser.role)}).`, 'success');
       return;
     } catch (err: any) {
+      const message =
+        err?.code === 'auth/invalid-credential' || err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password'
+          ? 'Unable to sign in. Please check your email and password.'
+          : err?.message || 'Unable to sign in. Please check your email and password.';
       console.error('Sign in error:', err);
-      setAuthError(err.message || 'Unable to sign in. Please verify your username/email and password.');
-      throw new Error(err.message || 'Unable to sign in. Please verify your username/email and password.');
+      setAuthError(message);
+      throw new Error(message);
     } finally {
       setIsAuthLoading(false);
     }
@@ -721,52 +711,52 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const firebaseUser = result.user;
-      const email = (firebaseUser.email || '').trim().toLowerCase();
-      const name = firebaseUser.displayName?.trim() || email.split('@')[0] || 'Citizen User';
+      const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
-      const existing =
-        registeredUsers.find((u) => u.email.toLowerCase() === email) ||
-        registeredUsers.find((u) => u.id === firebaseUser.uid) ||
-        null;
+      if (!profileDoc.exists()) {
+        await signOut(auth).catch(() => undefined);
+        const message = 'Your account profile is not configured. Please contact the administrator.';
+        setAuthError(message);
+        throw new Error(message);
+      }
 
-      const normalizedUser: RegisteredUserRecord = {
-        id: firebaseUser.uid,
-        firebaseUid: firebaseUser.uid,
-        name,
-        email,
-        phone: existing?.phone || '+91 8922 245000',
-        ward: existing?.ward || 'Ward 1 - Fort Road & Royal Palace Quarter',
-        role: existing?.role || 'citizen',
-        department: existing?.department,
-        approvalStatus: 'approved',
-        authProvider: 'google',
-        createdAt: existing?.createdAt || new Date().toISOString(),
+      const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
+      const normalizedRole = normalizeUserRole(profile.role || 'citizen');
+      const safeUser: User = {
+        id: profile.id,
+        name: profile.name || firebaseUser.displayName || 'Citizen User',
+        email: profile.email || firebaseUser.email || '',
+        role: normalizedRole,
+        phone: profile.phone,
+        ward: profile.ward,
+        department: profile.department,
+        employeeId: profile.employeeId,
+        designation: profile.designation,
+        workArea: profile.workArea,
+        approvalStatus: profile.approvalStatus,
+        createdAt: profile.createdAt,
         lastLoginAt: new Date().toISOString(),
-        loginCount: (existing?.loginCount || 0) + 1,
+        loginCount: (profile.loginCount || 0) + 1,
         isOnline: true,
-        submittedComplaintsCount: existing?.submittedComplaintsCount || 0,
       };
 
-      setCurrentUser(normalizedUser);
+      setCurrentUser(safeUser);
       setIsAuthenticated(true);
       setRegisteredUsers((prev) => {
-        const next = prev.filter((u) => u.id !== normalizedUser.id);
-        return [normalizedUser, ...next];
+        const next = prev.filter((u) => u.id !== safeUser.id);
+        return [{ ...profile, ...safeUser, lastLoginAt: safeUser.lastLoginAt, loginCount: safeUser.loginCount, isOnline: true }, ...next];
       });
-      await syncUserToFirestore(normalizedUser);
+
+      await syncUserToFirestore({ ...profile, ...safeUser, lastLoginAt: safeUser.lastLoginAt, loginCount: safeUser.loginCount, isOnline: true });
 
       addAuditLog({
-        user: normalizedUser.name,
-        role: normalizedUser.role,
+        user: safeUser.name,
+        role: safeUser.role,
         action: 'USER_LOGIN',
         details: 'User signed in with Google authentication.',
       });
 
-      showToast(
-        'Google Sign-In Successful',
-        `Welcome ${normalizedUser.name} (${getRoleDisplayName(normalizedUser.role)}).`,
-        'success'
-      );
+      showToast('Google Sign-In Successful', `Welcome ${safeUser.name} (${getRoleDisplayName(safeUser.role)}).`, 'success');
     } catch (err: any) {
       const message =
         err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request'
@@ -779,84 +769,21 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Quick Demo Sign In
-  const signInWithDemoUser = async (
-    demoRole: 'citizen' | 'worker' | 'higher_official' | 'admin' | 'field_officer' | 'department_officer'
-  ) => {
-    // Map backwards-compatible aliases
-    const targetRole: UserRole =
-      demoRole === 'field_officer'
-        ? 'worker'
-        : demoRole === 'department_officer'
-        ? 'higher_official'
-        : (demoRole as UserRole);
-
-    const matched =
-      DEMO_USERS.find((u) => u.role === targetRole) ||
-      registeredUsers.find((u) => u.role === targetRole) ||
-      DEMO_USERS[0];
-
-    const updated: RegisteredUserRecord = {
-      ...matched,
-      lastLoginAt: new Date().toISOString(),
-      loginCount: (matched.loginCount || 5) + 1,
-      isOnline: true,
-    };
-    setCurrentUser(updated);
-    setIsAuthenticated(true);
-    await syncUserToFirestore(updated);
-
-    addAuditLog({
-      user: updated.name,
-      role: updated.role,
-      action: 'DEMO_LOGIN',
-      details: `Active session switched to ${updated.name} (${updated.role}).`,
-    });
-
-    showToast('Signed In as Demo', `Active session: ${updated.name} (${getRoleDisplayName(updated.role)})`, 'info');
-  };
-
   // Sign Out
   const signOutUser = async () => {
     try {
-      if (currentUser?.id) {
-        await updateDoc(doc(db, 'users', currentUser.id), { isOnline: false });
+      if (auth.currentUser) {
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), { isOnline: false }).catch(() => undefined);
       }
       await signOut(auth);
-    } catch (e) {}
-    const guestUser: User = {
-      id: `GUEST-${Date.now().toString().slice(-4)}`,
-      name: 'Smart City Visitor',
-      email: 'visitor@smartcivic.local',
-      role: 'citizen',
-      ward: 'Ward 1 - Fort Road & Royal Palace Quarter',
-    };
-    setCurrentUser(guestUser);
-    setIsAuthenticated(false);
-    showToast('Signed Out', 'You have been signed out. Browsing as guest visitor.', 'info');
-  };
+    } catch (e) {
+      console.warn('Sign out warning:', e);
+    }
 
-  // Switch role helper for testing
-  const switchRole = async (role: UserRole) => {
-    const matched =
-      DEMO_USERS.find((u) => u.role === role) ||
-      registeredUsers.find((u) => u.role === role) || {
-        id: `USR-${role.toUpperCase()}`,
-        name: `${getRoleDisplayName(role).toUpperCase()} Officer`,
-        email: `${role}@vmc.ap.gov.in`,
-        role,
-        approvalStatus: 'approved',
-      };
-    const updated: RegisteredUserRecord = {
-      ...matched,
-      lastLoginAt: new Date().toISOString(),
-      loginCount: (matched.loginCount || 1) + 1,
-      isOnline: true,
-    };
-    setCurrentUser(updated);
-    setIsAuthenticated(true);
-    await syncUserToFirestore(updated);
-    showToast('Role Switched', `Active User: ${updated.name} (${getRoleDisplayName(updated.role)})`, 'info');
+    setCurrentUser(DEFAULT_GUEST_USER);
+    setIsAuthenticated(false);
+    setAuthError(null);
+    showToast('Signed Out', 'You have been signed out. Browsing as guest visitor.', 'info');
   };
 
   // Create complaint action with Location-Aware Auto-Assignment
@@ -1818,33 +1745,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Notifications Cleared', 'All notifications marked as read.', 'info');
   };
 
-  // Reset demo data
-  const resetDemoData = () => {
-    localStorage.removeItem(STORAGE_KEY_COMPLAINTS);
-    localStorage.removeItem(STORAGE_KEY_NOTIFS);
-    localStorage.removeItem(STORAGE_KEY_USER);
-    localStorage.removeItem(STORAGE_KEY_AUDIT);
-    localStorage.removeItem(STORAGE_KEY_ANNOUNCEMENTS);
-    localStorage.removeItem(STORAGE_KEY_PROJECTS);
-    setComplaints(INITIAL_COMPLAINTS);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setAnnouncements(MUNICIPAL_ANNOUNCEMENTS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setInfrastructureProjects(INITIAL_PROJECTS);
-    setCurrentUser(DEMO_USERS[0]);
-    setIsAuthenticated(false);
-    setSelectedComplaint(null);
-    setSelectedProject(null);
-    showToast('Demo Database Reset', 'Restored to Smart City Municipal presentation state.', 'info');
-  };
-
   return (
     <CivicContext.Provider
       value={{
         currentUser,
         isAuthenticated,
         setCurrentUser,
-        switchRole,
         complaints,
         notifications,
         selectedComplaint,
@@ -1868,7 +1774,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signInWithEmail,
         signInWithGoogle,
         signUpWithEmail,
-        signInWithDemoUser,
         signOutUser,
         createComplaint,
         updateComplaintStatus,
@@ -1890,7 +1795,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         upvoteComplaint,
         markNotificationRead,
         markAllNotificationsRead,
-        resetDemoData,
         activeToast,
         clearToast,
       }}
