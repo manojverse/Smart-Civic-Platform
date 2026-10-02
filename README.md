@@ -226,4 +226,5 @@ CivicSense includes a production-ready Express server bundled with esbuild into 
 ## 📄 9. License & Academic Attribution
 Developed as an academic capstone project in Computer Science and Engineering. Open-source under the **Apache 2.0 License**.
 #   S m a r t - C i v i c - P l a t f o r m  
+ #   S m a r t - C i v i c - P l a t f o r m  
  
