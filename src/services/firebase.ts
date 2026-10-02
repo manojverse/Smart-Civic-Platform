@@ -32,7 +32,10 @@ import firebaseConfigData from '../../firebase-applet-config.json';
 const app = !getApps().length ? initializeApp(firebaseConfigData) : getApp();
 
 // Initialize Firestore against the actual default database in Firebase Console.
-export const db = getFirestore(app);
+export const db = getFirestore(
+  app,
+  "ai-studio-smartcivicplatfo-c6b07919-e88d-4b7e-940f-6210daf54e8d"
+);
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);

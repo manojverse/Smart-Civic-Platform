@@ -1,11 +1,11 @@
-{
-  "projectId": "sound-quarter-q2sm5",
-  "appId": "1:821234134987:web:21708f64db9b0bb07a904e",
-  "apiKey": "AIzaSyCWFe4lZ8F4kwzulVCmzC2SwhIRLxn4jko",
-  "authDomain": "sound-quarter-q2sm5.firebaseapp.com",
-  "storageBucket": "sound-quarter-q2sm5.firebasestorage.app",
-  "messagingSenderId": "821234134987",
-  "measurementId": "",
-  "oAuthClientId": "821234134987-i04bdg1dm85um81ep9rnf9jqak4t2a0c.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
-}
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAFo_3odGXhpjcVJLNd5Q51pvkbiCDD4hQ",
+  authDomain: "smart-civic-a54ee.firebaseapp.com",
+  projectId: "smart-civic-a54ee",
+  storageBucket: "smart-civic-a54ee.firebasestorage.app",
+  messagingSenderId: "848695310088",
+  appId: "1:848695310088:web:89bd29c217d1c2d1d6debd",
+  measurementId: "G-BL68BM35B2"
+};
