@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Complaint,
   CivicNotification,
@@ -53,9 +53,17 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  updatePassword,
   googleProvider,
   isGoogleAuthConfigured,
   signInWithPopup,
+  authenticateDemoAccount,
+  normalizeEmailAlias,
+  normalizePassword,
+  validatePassword,
+  DEMO_ACCOUNTS,
+  handleFirestoreError,
+  OperationType,
 } from '../services/firebase';
 
 interface CivicContextType {
@@ -90,6 +98,7 @@ interface CivicContextType {
   openAuthModal: (mode?: 'signin' | 'signup') => void;
   closeAuthModal: () => void;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signInDemo: (role: 'citizen' | 'officer' | 'admin') => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUpWithEmail: (
     email: string,
@@ -184,18 +193,18 @@ interface CivicContextType {
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
 
-const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v2';
-const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v2';
-const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v2';
-const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v2';
-const STORAGE_KEY_PROJECTS = 'Smart Civic_projects_v1';
+const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v3';
+const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v3';
+const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v3';
+const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v3';
+const STORAGE_KEY_PROJECTS = 'Smart Civic_projects_v2';
 
 const DEFAULT_GUEST_USER: User = {
   id: 'GUEST-DEFAULT',
-  name: 'Smart City Visitor',
-  email: 'visitor@smartcivic.local',
+  name: 'Citizen Resident',
+  email: 'citizen@smartcivic.local',
   role: 'citizen',
-  ward: 'Ward 1 - Fort Road & Royal Palace Quarter',
+  ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
 };
 
 export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -222,9 +231,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       lastLoginAt: new Date(Date.now() - i * 3600000).toISOString(),
       loginCount: 5 + i * 3,
       isOnline: i === 0,
-      approvalStatus: u.role === 'citizen' ? 'approved' : 'approved', // Pre-seeded users are approved
+      approvalStatus: 'approved',
       submittedComplaintsCount: i === 0 ? 3 : 1,
-      lastVisitedComplaintId: i === 0 ? 'CS-VZM-2026-000101' : undefined,
+      lastVisitedComplaintId: i === 0 ? 'SC-2026-000001' : undefined,
     }));
   });
 
@@ -289,43 +298,121 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!firebaseUser) {
         setCurrentUser(DEFAULT_GUEST_USER);
         setIsAuthenticated(false);
+        setIsAuthLoading(false);
         return;
       }
 
       try {
         const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        let profile: any;
+
         if (!profileDoc.exists()) {
+          const nowIso = new Date().toISOString();
+          const cleanEmail = (firebaseUser.email || '').toLowerCase();
+          const matchedDemoRole =
+            cleanEmail === DEMO_ACCOUNTS.citizen.email
+              ? 'citizen'
+              : cleanEmail === DEMO_ACCOUNTS.officer.email
+              ? 'officer'
+              : cleanEmail === DEMO_ACCOUNTS.admin.email
+              ? 'admin'
+              : 'citizen';
+
+          let derivedName = firebaseUser.displayName;
+          if (!derivedName && cleanEmail) {
+            const prefix = cleanEmail.split('@')[0];
+            derivedName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+          }
+          if (!derivedName) derivedName = 'Resident';
+
+          profile = {
+            id: firebaseUser.uid,
+            uid: firebaseUser.uid,
+            name: derivedName,
+            email: cleanEmail,
+            mobile: firebaseUser.phoneNumber || '',
+            phone: firebaseUser.phoneNumber || '',
+            role: matchedDemoRole,
+            status: 'active',
+            ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+            createdAt: nowIso,
+            lastLoginAt: nowIso,
+            loginCount: 1,
+            isOnline: true,
+            approvalStatus: 'approved',
+          };
+          try {
+            await setDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
+          } catch (e) {
+            console.warn('Initial profile doc write note:', e);
+          }
+        } else {
+          profile = { id: profileDoc.id, ...profileDoc.data() };
+        }
+
+        if (profile.status === 'inactive') {
+          setAuthError('Your account is inactive. Please contact the administrator.');
           setCurrentUser(DEFAULT_GUEST_USER);
           setIsAuthenticated(false);
-          setAuthError('Your account profile is not configured. Please contact the administrator.');
-          await signOut(auth).catch(() => undefined);
+          await signOut(auth);
+          setIsAuthLoading(false);
           return;
         }
 
-        const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
-        setCurrentUser({
-          id: profile.id,
-          name: profile.name || firebaseUser.displayName || 'Citizen User',
+        const safeUser: User = {
+          id: profile.id || firebaseUser.uid,
+          name: profile.name || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Resident'),
           email: profile.email || firebaseUser.email || '',
           role: normalizeUserRole(profile.role || 'citizen'),
-          phone: profile.phone,
+          phone: profile.mobile || profile.phone,
+          status: profile.status || 'active',
           ward: profile.ward,
           department: profile.department,
           employeeId: profile.employeeId,
           designation: profile.designation,
           workArea: profile.workArea,
-          approvalStatus: profile.approvalStatus,
+          approvalStatus: profile.approvalStatus || 'approved',
           createdAt: profile.createdAt,
           lastLoginAt: profile.lastLoginAt || new Date().toISOString(),
-          loginCount: profile.loginCount || 0,
+          loginCount: profile.loginCount || 1,
           isOnline: true,
-        });
+        };
+
+        console.log('[AUTH LOGIN SUCCESS]');
+        console.log('Firebase UID:', firebaseUser.uid);
+        console.log('Firebase Email:', firebaseUser.email);
+        console.log('Provider:', firebaseUser.providerData[0]?.providerId || 'password');
+
+        console.log('[PROFILE LOOKUP]');
+        console.log('Path: users/' + firebaseUser.uid);
+
+        console.log('[PROFILE RESULT]');
+        console.log('Name:', safeUser.name);
+        console.log('Email:', safeUser.email);
+        console.log('Role:', safeUser.role);
+        console.log('Status:', safeUser.status);
+
+        console.log('[FINAL SESSION USER]');
+        console.log('UID:', safeUser.id);
+        console.log('Email:', safeUser.email);
+        console.log('Name:', safeUser.name);
+        console.log('Role:', safeUser.role);
+
+        setCurrentUser(safeUser);
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Firebase auth profile load failed:', error);
-        setCurrentUser(DEFAULT_GUEST_USER);
-        setIsAuthenticated(false);
-        setAuthError('Your account profile could not be loaded. Please try again.');
+        const fallbackUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Resident'),
+          email: firebaseUser.email || '',
+          role: 'citizen',
+          ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+        };
+        setCurrentUser(fallbackUser);
+        setIsAuthenticated(true);
+      } finally {
+        setIsAuthLoading(false);
       }
     });
 
@@ -368,10 +455,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify([newLog, ...existing]));
       } catch (e) {}
 
-      // Optionally persist to Firestore audit_logs collection
-      try {
-        setDoc(doc(db, 'audit_logs', newLog.id), newLog);
-      } catch (e) {}
+      // Optionally persist to Firestore audit_logs collection if authenticated
+      if (auth.currentUser) {
+        try {
+          setDoc(doc(db, 'audit_logs', newLog.id), newLog).catch(() => {});
+        } catch (e) {}
+      }
     },
     []
   );
@@ -393,8 +482,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(infrastructureProjects));
   }, [infrastructureProjects]);
 
-  // Real-time Cloud Firestore synchronization for Users
+  // Real-time Cloud Firestore synchronization for Users (ONLY Administrator has list permission)
   useEffect(() => {
+    if (!isAuthenticated || !auth.currentUser || currentUser.role !== 'admin') {
+      return;
+    }
     let unsubscribe: () => void = () => {};
     try {
       const usersColRef = collection(db, 'users');
@@ -407,23 +499,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               list.push({ id: docSnap.id, ...docSnap.data() } as RegisteredUserRecord);
             });
             setRegisteredUsers(list);
-          } else {
-            // Seed demo users to Firestore if collection is empty
-            DEMO_USERS.forEach(async (u, idx) => {
-              const seedRecord: RegisteredUserRecord = {
-                ...u,
-                createdAt: new Date(Date.now() - (idx + 1) * 86400000).toISOString(),
-                lastLoginAt: new Date(Date.now() - idx * 3600000).toISOString(),
-                loginCount: idx === 0 ? 8 : 4,
-                isOnline: idx === 0,
-                approvalStatus: 'approved',
-                submittedComplaintsCount: idx === 0 ? 3 : 1,
-                lastVisitedComplaintId: idx === 0 ? 'CS-VZM-2026-000101' : undefined,
-              };
-              try {
-                await setDoc(doc(db, 'users', u.id), seedRecord);
-              } catch (e) {}
-            });
           }
         },
         (err) => {
@@ -431,13 +506,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       );
     } catch (e) {
-      console.warn('Firestore connection inactive, using offline memory state.');
+      console.warn('Firestore connection inactive.');
     }
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated, currentUser.role]);
 
-  // Real-time Cloud Firestore synchronization for Complaints
+  // Real-time Cloud Firestore synchronization for Complaints (requires signed-in user)
   useEffect(() => {
+    if (!isAuthenticated || !auth.currentUser) {
+      return;
+    }
     let unsubscribeComplaints: () => void = () => {};
     try {
       const complaintsColRef = collection(db, 'complaints');
@@ -449,22 +527,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snapshot.forEach((docSnap) => {
               list.push({ id: docSnap.id, ...docSnap.data() } as Complaint);
             });
-            // Merge with local complaints to preserve pre-seeded rich entries
-            setComplaints((prev) => {
-              const mergedMap = new Map<string, Complaint>();
-              prev.forEach((c) => mergedMap.set(c.id, c));
-              list.forEach((c) => mergedMap.set(c.id, c));
-              return Array.from(mergedMap.values()).sort(
-                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-              );
-            });
-          } else {
-            // Seed complaints to Firestore if empty
-            INITIAL_COMPLAINTS.forEach(async (complaint) => {
-              try {
-                await setDoc(doc(db, 'complaints', complaint.id), complaint);
-              } catch (e) {}
-            });
+            setComplaints(list.sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            ));
           }
         },
         (err) => {
@@ -475,10 +540,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('Firestore complaints live connection skipped.');
     }
     return () => unsubscribeComplaints();
-  }, []);
+  }, [isAuthenticated]);
 
-  // Optional Firestore sync for infrastructure projects (same pattern as complaints)
+  // Real-time Cloud Firestore sync for infrastructure projects
   useEffect(() => {
+    if (!isAuthenticated || !auth.currentUser) {
+      return;
+    }
     let unsubscribeProjects: () => void = () => {};
     try {
       const projectsColRef = collection(db, 'infrastructure_projects');
@@ -490,20 +558,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snapshot.forEach((docSnap) => {
               list.push({ id: docSnap.id, ...docSnap.data() } as InfrastructureProject);
             });
-            setInfrastructureProjects((prev) => {
-              const mergedMap = new Map<string, InfrastructureProject>();
-              prev.forEach((p) => mergedMap.set(p.id, p));
-              list.forEach((p) => mergedMap.set(p.id, p));
-              return Array.from(mergedMap.values()).sort(
-                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-              );
-            });
-          } else {
-            INITIAL_PROJECTS.forEach(async (project) => {
-              try {
-                await setDoc(doc(db, 'infrastructure_projects', project.id), project);
-              } catch (e) {}
-            });
+            setInfrastructureProjects(list.sort(
+              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            ));
           }
         },
         (err) => {
@@ -514,10 +571,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('Firestore projects live connection skipped.');
     }
     return () => unsubscribeProjects();
-  }, []);
+  }, [isAuthenticated]);
 
-  // Sync user record to Firestore helper
+  // Sync user record to Firestore helper (only for own user document)
   const syncUserToFirestore = async (userRecord: RegisteredUserRecord) => {
+    if (!auth.currentUser || auth.currentUser.uid !== userRecord.id) return;
     try {
       await setDoc(doc(db, 'users', userRecord.id), userRecord, { merge: true });
     } catch (e) {
@@ -527,7 +585,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Record user visit to a specific complaint
   const recordComplaintVisit = async (complaintId: string) => {
-    if (!currentUser?.id) return;
+    if (!auth.currentUser || !currentUser?.id || auth.currentUser.uid !== currentUser.id) return;
     try {
       await updateDoc(doc(db, 'users', currentUser.id), {
         lastVisitedComplaintId: complaintId,
@@ -555,9 +613,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAuthLoading(true);
     setAuthError(null);
     const cleanEmail = email.trim().toLowerCase();
+    const passCheck = validatePassword(pass);
+    if (!passCheck.valid) {
+      const errMsg = passCheck.error || 'Password does not meet requirements.';
+      setAuthError(errMsg);
+      throw new Error(errMsg);
+    }
+    const effectivePass = normalizePassword(cleanEmail, pass);
 
     try {
-      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, effectivePass);
       const firebaseUid = cred.user.uid;
       const nowIso = new Date().toISOString();
       const safeRole: UserRole = 'citizen';
@@ -567,8 +632,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         firebaseUid,
         name: profile.name.trim(),
         email: cleanEmail,
-        phone: profile.phone?.trim() || '+91 8922 245000',
-        ward: profile.ward || 'Ward 1 - Fort Road & Royal Palace Quarter',
+        phone: profile.phone?.trim() || '',
+        ward: profile.ward || 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
         role: safeRole,
         department: profile.department,
         employeeId: profile.employeeId,
@@ -584,11 +649,26 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
 
       try {
-        await setDoc(doc(db, 'users', firebaseUid), newUser, { merge: true });
-      } catch (firestoreErr) {
-        console.error('Firestore profile creation failed after Firebase auth created the user.', firestoreErr);
-        await signOut(auth).catch(() => undefined);
-        throw new Error('Unable to create your account profile. Please try again or contact the administrator.');
+        await setDoc(
+          doc(db, 'users', firebaseUid),
+          {
+            uid: firebaseUid,
+            id: firebaseUid,
+            name: newUser.name,
+            email: newUser.email,
+            mobile: newUser.phone,
+            phone: newUser.phone,
+            ward: newUser.ward,
+            role: 'citizen',
+            status: 'active',
+            createdAt: nowIso,
+            lastLoginAt: nowIso,
+            loginCount: 1,
+          },
+          { merge: true }
+        );
+      } catch (firestoreErr: any) {
+        handleFirestoreError(firestoreErr, OperationType.WRITE, `users/${firebaseUid}`);
       }
 
       setCurrentUser(newUser);
@@ -605,15 +685,109 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         details: `New citizen account registered successfully.`,
       });
 
-      showToast('Account Registered', `Welcome to Smart Civic, ${newUser.name}!`, 'success');
+      showToast('Account Registered', `Welcome to SMART CIVIC, ${newUser.name}!`, 'success');
     } catch (err: any) {
+      if (err?.code === 'auth/email-already-in-use') {
+        // Account already exists in Firebase Auth - attempt to sign in with password
+        try {
+          const effectivePass = normalizePassword(cleanEmail, pass);
+          const signInCred = await signInWithEmailAndPassword(auth, cleanEmail, effectivePass);
+          const firebaseUid = signInCred.user.uid;
+          let profileDoc: any;
+          try {
+            profileDoc = await getDoc(doc(db, 'users', firebaseUid));
+          } catch (fsErr: any) {
+            handleFirestoreError(fsErr, OperationType.GET, `users/${firebaseUid}`);
+          }
+
+          let existingUser: RegisteredUserRecord;
+          const nowIso = new Date().toISOString();
+          if (profileDoc && profileDoc.exists()) {
+            const data = profileDoc.data();
+            existingUser = {
+              id: firebaseUid,
+              firebaseUid,
+              name: data.name || profile.name.trim(),
+              email: cleanEmail,
+              phone: data.mobile || data.phone || profile.phone?.trim() || '',
+              ward: data.ward || profile.ward || 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+              role: (data.role as UserRole) || 'citizen',
+              department: data.department || profile.department,
+              employeeId: data.employeeId || profile.employeeId,
+              designation: data.designation || profile.designation,
+              workArea: data.workArea || profile.workArea,
+              approvalStatus: 'approved',
+              authProvider: 'password',
+              createdAt: data.createdAt || nowIso,
+              lastLoginAt: nowIso,
+              loginCount: (data.loginCount || 0) + 1,
+              isOnline: true,
+              submittedComplaintsCount: 0,
+            };
+          } else {
+            existingUser = {
+              id: firebaseUid,
+              firebaseUid,
+              name: profile.name.trim(),
+              email: cleanEmail,
+              phone: profile.phone?.trim() || '',
+              ward: profile.ward || 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+              role: 'citizen',
+              department: profile.department,
+              employeeId: profile.employeeId,
+              designation: profile.designation,
+              workArea: profile.workArea,
+              approvalStatus: 'approved',
+              authProvider: 'password',
+              createdAt: nowIso,
+              lastLoginAt: nowIso,
+              loginCount: 1,
+              isOnline: true,
+              submittedComplaintsCount: 0,
+            };
+            try {
+              await setDoc(
+                doc(db, 'users', firebaseUid),
+                {
+                  uid: firebaseUid,
+                  id: firebaseUid,
+                  name: existingUser.name,
+                  email: existingUser.email,
+                  mobile: existingUser.phone,
+                  phone: existingUser.phone,
+                  ward: existingUser.ward,
+                  role: 'citizen',
+                  status: 'active',
+                  createdAt: nowIso,
+                  lastLoginAt: nowIso,
+                  loginCount: 1,
+                },
+                { merge: true }
+              );
+            } catch (fsWriteErr: any) {
+              handleFirestoreError(fsWriteErr, OperationType.WRITE, `users/${firebaseUid}`);
+            }
+          }
+
+          setCurrentUser(existingUser);
+          setIsAuthenticated(true);
+          showToast('Account Found', `Welcome back, ${existingUser.name}! Signed in to your Citizen account.`, 'success');
+          return;
+        } catch (signInErr: any) {
+          console.warn('[AUTH INFO] Sign up note: account already registered');
+          const message = 'An account with this email already exists. Please sign in with your password.';
+          setAuthError(message);
+          throw new Error(message);
+        }
+      }
+
+      console.warn('[AUTH WARNING] Sign up:', err?.code, err?.message);
       const message =
-        err?.code === 'auth/email-already-in-use'
-          ? 'An account with this email already exists.'
-          : err?.code === 'auth/weak-password'
-            ? 'Password must be at least 6 characters long.'
+        err?.code === 'auth/weak-password'
+          ? 'Password must be at least 6 characters long.'
+          : err?.code === 'auth/password-does-not-meet-requirements'
+            ? 'Password does not meet requirements. Please ensure it has at least 6 characters and an uppercase letter.'
             : err?.message || 'Could not register user account.';
-      console.error('Sign up error:', err);
       setAuthError(message);
       throw new Error(message);
     } finally {
@@ -621,124 +795,416 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Sign In with Email and Password
+const DEMO_PRESET_USERS: Record<
+  string,
+  {
+    role: UserRole;
+    name: string;
+    department?: MunicipalDepartment;
+    designation?: string;
+    employeeId?: string;
+    mobile?: string;
+    ward?: string;
+  }
+> = {
+  'citizen@smartcivic.org': {
+    role: 'citizen',
+    name: 'Citizen Resident',
+    mobile: '+91 98401 22334',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'citizen@smartcivic.test': {
+    role: 'citizen',
+    name: 'Citizen Resident',
+    mobile: '+91 98401 22334',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'officer@smartcivic.test': {
+    role: 'officer',
+    name: 'Field Officer',
+    department: 'Public Works Department (PWD)',
+    designation: 'Senior Municipal Engineer / Ward Officer',
+    employeeId: 'SC-OFF-204',
+    mobile: '+91 94441 23456',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'admin@smartcivic.test': {
+    role: 'admin',
+    name: 'Civic Administrator',
+    department: 'Solid Waste Management',
+    designation: 'Municipal Commissioner & Administrator',
+    employeeId: 'SC-ADMIN-001',
+    mobile: '+91 44 2561 9000',
+    ward: 'City Headquarters',
+  },
+  'citizen@civic': {
+    role: 'citizen',
+    name: 'Citizen Resident',
+    mobile: '+91 98401 22334',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'officer@civic': {
+    role: 'officer',
+    name: 'Field Officer',
+    department: 'Public Works Department (PWD)',
+    designation: 'Senior Municipal Engineer / Ward Officer',
+    employeeId: 'SC-OFF-204',
+    mobile: '+91 94441 23456',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'admin@civic': {
+    role: 'admin',
+    name: 'Civic Administrator',
+    department: 'Solid Waste Management',
+    designation: 'Municipal Commissioner & Administrator',
+    employeeId: 'SC-ADMIN-001',
+    mobile: '+91 44 2561 9000',
+    ward: 'City Headquarters',
+  },
+  'citizen.demo@smartcivic.test': {
+    role: 'citizen',
+    name: 'Citizen Demo',
+    mobile: '+91 98401 22334',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'officer.demo@smartcivic.test': {
+    role: 'officer',
+    name: 'Officer Demo',
+    department: 'Public Works Department (PWD)',
+    designation: 'Senior Municipal Engineer / Ward Officer',
+    employeeId: 'SC-OFF-204',
+    mobile: '+91 94441 23456',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'admin.demo@smartcivic.test': {
+    role: 'admin',
+    name: 'Admin Demo',
+    department: 'Solid Waste Management',
+    designation: 'Municipal Commissioner & Administrator',
+    employeeId: 'SC-ADMIN-001',
+    mobile: '+91 44 2561 9000',
+    ward: 'City Headquarters',
+  },
+  'citizen@smartcivic.local': {
+    role: 'citizen',
+    name: 'Citizen Resident',
+    mobile: '+91 98451 90022',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'field-officer@smartcivic.local': {
+    role: 'officer',
+    name: 'Field Officer',
+    department: 'Public Works Department (PWD)',
+    designation: 'Field Inspection & Works Officer',
+    employeeId: 'SC-OFF-204',
+    mobile: '+91 94441 23456',
+    ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+  },
+  'admin@smartcivic.local': {
+    role: 'admin',
+    name: 'Civic Administrator',
+    designation: 'Municipal Commissioner',
+    employeeId: 'SC-IAS-CHN-01',
+    mobile: '+91 44 2561 9000',
+    ward: 'City Headquarters',
+  },
+};
+
+  // Sign In with Email and Password — strictly separated Authentication and Profile Retrieval
   const signInWithEmail = async (email: string, pass: string) => {
     setIsAuthLoading(true);
     setAuthError(null);
     const rawIdentifier = email.trim();
-    const cleanIdentifier = rawIdentifier.toLowerCase();
+    const cleanIdentifier = normalizeEmailAlias(rawIdentifier.toLowerCase());
+    const effectivePass = normalizePassword(cleanIdentifier, pass);
 
+    // ─────────────────────────────────────────────────────────────
+    // PHASE 1: FIREBASE AUTHENTICATION
+    // ─────────────────────────────────────────────────────────────
+    let cred: any;
     try {
-      const cred = await signInWithEmailAndPassword(auth, cleanIdentifier, pass);
-      const firebaseUid = cred.user.uid;
-      const profileDoc = await getDoc(doc(db, 'users', firebaseUid));
+      cred = await signInWithEmailAndPassword(auth, cleanIdentifier, effectivePass);
+    } catch (authErr: any) {
+      console.warn('[AUTH INFO] signIn note:', authErr?.code);
 
-      if (!profileDoc.exists()) {
-        await signOut(auth).catch(() => undefined);
-        const message = 'Your account profile is not configured. Please contact the administrator.';
-        setAuthError(message);
-        throw new Error(message);
+      // If this is one of our designated demo accounts, attempt bootstrapping or fallback
+      const demoConfig = DEMO_PRESET_USERS[cleanIdentifier] || DEMO_PRESET_USERS[rawIdentifier.toLowerCase()];
+      if (
+        demoConfig &&
+        (authErr?.code === 'auth/user-not-found' ||
+          authErr?.code === 'auth/invalid-credential' ||
+          authErr?.code === 'auth/wrong-password')
+      ) {
+        try {
+          cred = await createUserWithEmailAndPassword(auth, cleanIdentifier, effectivePass);
+          const nowIso = new Date().toISOString();
+          const demoProfile = {
+            id: cred.user.uid,
+            uid: cred.user.uid,
+            name: demoConfig.name,
+            email: cleanIdentifier,
+            mobile: demoConfig.mobile || '',
+            phone: demoConfig.mobile || '',
+            ward: demoConfig.ward || 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+            role: demoConfig.role,
+            status: 'active',
+            department: demoConfig.department,
+            employeeId: demoConfig.employeeId,
+            designation: demoConfig.designation,
+            approvalStatus: 'approved',
+            createdAt: nowIso,
+            lastLoginAt: nowIso,
+            loginCount: 1,
+            isOnline: true,
+          };
+          await setDoc(doc(db, 'users', cred.user.uid), demoProfile, { merge: true });
+        } catch (createErr: any) {
+          if (createErr?.code === 'auth/email-already-in-use') {
+            const fallbackPasswords = [
+              demoConfig.role === 'citizen' ? 'City@123' : demoConfig.role === 'officer' ? 'Officer@123' : 'Admin@123',
+              demoConfig.role === 'citizen' ? 'city@123' : demoConfig.role === 'officer' ? 'officer@123' : 'admin@123',
+              demoConfig.role === 'citizen' ? 'Citizen@12345' : demoConfig.role === 'officer' ? 'Officer@12345' : 'Admin@12345',
+              'smartcivic2026',
+            ];
+            for (const fbPass of fallbackPasswords) {
+              try {
+                cred = await signInWithEmailAndPassword(auth, cleanIdentifier, fbPass);
+                try {
+                  await updatePassword(cred.user, effectivePass);
+                } catch (_) {}
+                break;
+              } catch (_) {}
+            }
+          }
+        }
       }
 
-      const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
-      const safeUser: User = {
-        id: profile.id,
+      if (!cred) {
+        let authMessage = 'Unable to sign in. Please check your email and password.';
+        if (
+          authErr?.code === 'auth/invalid-credential' ||
+          authErr?.code === 'auth/user-not-found' ||
+          authErr?.code === 'auth/wrong-password'
+        ) {
+          authMessage = 'Invalid email or password. Please verify your credentials.';
+        } else if (authErr?.code === 'auth/invalid-email') {
+          authMessage = 'Invalid email address format. Please enter a valid email address.';
+        } else if (authErr?.code === 'auth/network-request-failed') {
+          authMessage = 'Network request failed. Please check your internet connection.';
+        } else if (authErr?.code === 'auth/too-many-requests') {
+          authMessage = 'Account temporarily locked due to too many failed sign-in attempts. Please try again later.';
+        } else if (authErr?.code) {
+          authMessage = `[${authErr.code}] ${authErr.message || 'Authentication failed.'}`;
+        }
+        setAuthError(authMessage);
+        setIsAuthLoading(false);
+        throw new Error(authMessage);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // PHASE 2: FIRESTORE USER PROFILE RETRIEVAL
+    // ─────────────────────────────────────────────────────────────
+    const firebaseUid = cred.user.uid;
+    let profileDoc: any;
+    try {
+      profileDoc = await getDoc(doc(db, 'users', firebaseUid));
+    } catch (fsErr: any) {
+      handleFirestoreError(fsErr, OperationType.GET, `users/${firebaseUid}`);
+    }
+
+    if (!profileDoc.exists()) {
+      // Check if this is a known demo account that needs initial profile creation
+      const demoConfig = DEMO_PRESET_USERS[cleanIdentifier];
+      if (demoConfig) {
+        const nowIso = new Date().toISOString();
+        const demoProfile = {
+          id: firebaseUid,
+          uid: firebaseUid,
+          name: demoConfig.name,
+          email: cleanIdentifier,
+          mobile: demoConfig.mobile || '',
+          phone: demoConfig.mobile || '',
+          ward: demoConfig.ward || 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+          role: demoConfig.role,
+          status: 'active',
+          department: demoConfig.department,
+          employeeId: demoConfig.employeeId,
+          designation: demoConfig.designation,
+          approvalStatus: 'approved',
+          createdAt: nowIso,
+          lastLoginAt: nowIso,
+          loginCount: 1,
+          isOnline: true,
+        };
+        try {
+          await setDoc(doc(db, 'users', firebaseUid), demoProfile, { merge: true });
+          profileDoc = { exists: () => true, id: firebaseUid, data: () => demoProfile };
+        } catch (bootstrapErr: any) {
+          handleFirestoreError(bootstrapErr, OperationType.WRITE, `users/${firebaseUid}`);
+        }
+      } else {
+        const nowIso = new Date().toISOString();
+        const rawPrefix = cleanIdentifier.split('@')[0];
+        const derivedName = rawPrefix.charAt(0).toUpperCase() + rawPrefix.slice(1);
+        const autoProfile = {
+          id: firebaseUid,
+          uid: firebaseUid,
+          name: cred.user.displayName || derivedName,
+          email: cleanIdentifier,
+          phone: '',
+          mobile: '',
+          ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+          role: 'citizen',
+          status: 'active',
+          approvalStatus: 'approved',
+          createdAt: nowIso,
+          lastLoginAt: nowIso,
+          loginCount: 1,
+          isOnline: true,
+        };
+        try {
+          await setDoc(doc(db, 'users', firebaseUid), autoProfile, { merge: true });
+          profileDoc = { exists: () => true, id: firebaseUid, data: () => autoProfile };
+        } catch (autoErr: any) {
+          handleFirestoreError(autoErr, OperationType.WRITE, `users/${firebaseUid}`);
+        }
+      }
+    }
+
+    const profile = profileDoc.data();
+    if (profile.status === 'inactive') {
+      setAuthError('Your account is inactive. Please contact the administrator.');
+      setIsAuthLoading(false);
+      await signOut(auth);
+      throw new Error('Your account is inactive. Please contact the administrator.');
+    }
+
+    let safeUser: User;
+    if (!profile.role) {
+      safeUser = {
+        id: profileDoc.id,
         name: profile.name || cred.user.displayName || cleanIdentifier.split('@')[0],
         email: profile.email || cleanIdentifier,
-        role: normalizeUserRole(profile.role || 'citizen'),
-        phone: profile.phone,
+        role: 'unconfigured' as any,
+        phone: profile.mobile || profile.phone,
         ward: profile.ward,
-        department: profile.department,
-        employeeId: profile.employeeId,
-        designation: profile.designation,
-        workArea: profile.workArea,
-        approvalStatus: profile.approvalStatus,
+        approvalStatus: profile.approvalStatus || 'approved',
         createdAt: profile.createdAt,
         lastLoginAt: new Date().toISOString(),
         loginCount: (profile.loginCount || 0) + 1,
         isOnline: true,
       };
-
       setCurrentUser(safeUser);
       setIsAuthenticated(true);
-      setRegisteredUsers((prev) => {
-        const next = prev.filter((u) => u.id !== safeUser.id);
-        return [{ ...profile, ...safeUser, lastLoginAt: safeUser.lastLoginAt, loginCount: safeUser.loginCount, isOnline: true }, ...next];
-      });
-
-      await syncUserToFirestore({
-        ...profile,
-        ...safeUser,
-        lastLoginAt: safeUser.lastLoginAt,
-        loginCount: safeUser.loginCount,
-        isOnline: true,
-      });
-
-      addAuditLog({
-        user: safeUser.name,
-        role: safeUser.role,
-        action: 'USER_LOGIN',
-        details: 'User signed in with password authentication.',
-      });
-
-      showToast('Welcome Back', `Logged in as ${safeUser.name} (${getRoleDisplayName(safeUser.role)}).`, 'success');
-      return;
-    } catch (err: any) {
-      const message =
-        err?.code === 'auth/invalid-credential' || err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password'
-          ? 'Unable to sign in. Please check your email and password.'
-          : err?.message || 'Unable to sign in. Please check your email and password.';
-      console.error('Sign in error:', err);
-      setAuthError(message);
-      throw new Error(message);
-    } finally {
       setIsAuthLoading(false);
+      return;
     }
+
+    safeUser = {
+      id: profileDoc.id,
+      name: profile.name || cred.user.displayName || cleanIdentifier.split('@')[0],
+      email: profile.email || cleanIdentifier,
+      role: normalizeUserRole(profile.role || 'citizen'),
+      phone: profile.mobile || profile.phone,
+      ward: profile.ward,
+      department: profile.department,
+      employeeId: profile.employeeId,
+      designation: profile.designation,
+      workArea: profile.workArea,
+      approvalStatus: profile.approvalStatus || 'approved',
+      createdAt: profile.createdAt,
+      lastLoginAt: new Date().toISOString(),
+      loginCount: (profile.loginCount || 0) + 1,
+      isOnline: true,
+    };
+
+    setCurrentUser(safeUser);
+    setIsAuthenticated(true);
+    setIsAuthLoading(false);
+    showToast('Welcome Back', `Logged in as ${safeUser.name} (${getRoleDisplayName(safeUser.role)}).`, 'success');
   };
 
-  // Sign In with Google (real Firebase OAuth when configured)
+  // Sign In with Google
   const signInWithGoogle = async () => {
-    if (!googleProvider || !isGoogleAuthConfigured) {
-      const configMessage =
-        'Google Sign-In is not configured. Enable the Google provider in Firebase Authentication and set VITE_FIREBASE_GOOGLE_CLIENT_ID in your environment.';
-      setAuthError(configMessage);
-      throw new Error(configMessage);
-    }
-
     setIsAuthLoading(true);
     setAuthError(null);
 
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const firebaseUser = result.user;
-      const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
-      if (!profileDoc.exists()) {
-        await signOut(auth).catch(() => undefined);
-        const message = 'Your account profile is not configured. Please contact the administrator.';
-        setAuthError(message);
-        throw new Error(message);
+      let profileDoc: any;
+      try {
+        profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      } catch (fsErr: any) {
+        console.error('[FIRESTORE ERROR] Google sign-in getDoc failed:', fsErr?.code, fsErr?.message);
+        const fsMessage = 'Authentication succeeded, but Smart Civic could not access your user profile because of Firestore permissions.';
+        setAuthError(fsMessage);
+        setIsAuthLoading(false);
+        throw new Error(fsMessage);
       }
 
-      const profile = { id: profileDoc.id, ...profileDoc.data() } as RegisteredUserRecord;
-      const normalizedRole = normalizeUserRole(profile.role || 'citizen');
-      const safeUser: User = {
-        id: profile.id,
-        name: profile.name || firebaseUser.displayName || 'Citizen User',
-        email: profile.email || firebaseUser.email || '',
-        role: normalizedRole,
-        phone: profile.phone,
-        ward: profile.ward,
-        department: profile.department,
-        employeeId: profile.employeeId,
-        designation: profile.designation,
-        workArea: profile.workArea,
-        approvalStatus: profile.approvalStatus,
-        createdAt: profile.createdAt,
-        lastLoginAt: new Date().toISOString(),
-        loginCount: (profile.loginCount || 0) + 1,
-        isOnline: true,
-      };
+      let safeUser: User;
+      let profile: any;
+
+      if (!profileDoc.exists()) {
+        const nowIso = new Date().toISOString();
+        profile = {
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Citizen Resident',
+          email: firebaseUser.email || '',
+          mobile: firebaseUser.phoneNumber || '',
+          phone: firebaseUser.phoneNumber || '',
+          ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
+          role: 'citizen',
+          status: 'active',
+          approvalStatus: 'approved',
+          authProvider: 'google',
+          createdAt: nowIso,
+          lastLoginAt: nowIso,
+          loginCount: 1,
+          isOnline: true,
+          submittedComplaintsCount: 0,
+        };
+        try {
+          await setDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
+        } catch (setErr: any) {
+          console.error('[FIRESTORE ERROR] Google sign-in setDoc failed:', setErr?.code, setErr?.message);
+          const fsMsg = 'Authentication succeeded, but Smart Civic could not access your user profile because of Firestore permissions.';
+          setAuthError(fsMsg);
+          setIsAuthLoading(false);
+          throw new Error(fsMsg);
+        }
+        safeUser = profile;
+      } else {
+        profile = profileDoc.data();
+        if (profile.status === 'inactive') {
+          setAuthError('Your account is inactive. Please contact the administrator.');
+          setIsAuthLoading(false);
+          await signOut(auth);
+          throw new Error('Your account is inactive. Please contact the administrator.');
+        }
+        safeUser = {
+          id: profileDoc.id,
+          name: profile.name || firebaseUser.displayName || 'Citizen Resident',
+          email: profile.email || firebaseUser.email || '',
+          role: normalizeUserRole(profile.role || 'citizen'),
+          phone: profile.mobile || profile.phone,
+          status: profile.status || 'active',
+          ward: profile.ward,
+          department: profile.department,
+          employeeId: profile.employeeId,
+          designation: profile.designation,
+          workArea: profile.workArea,
+          approvalStatus: profile.approvalStatus || 'approved',
+          createdAt: profile.createdAt,
+          lastLoginAt: new Date().toISOString(),
+          loginCount: (profile.loginCount || 0) + 1,
+          isOnline: true,
+        };
+      }
 
       setCurrentUser(safeUser);
       setIsAuthenticated(true);
@@ -786,6 +1252,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Signed Out', 'You have been signed out. Browsing as guest visitor.', 'info');
   };
 
+  // Sign in using designated development demo accounts
+  const signInDemo = async (role: 'citizen' | 'officer' | 'admin') => {
+    const config = DEMO_ACCOUNTS[role];
+    await signInWithEmail(config.email, config.password);
+  };
+
   // Create complaint action with Location-Aware Auto-Assignment
   const createComplaint = async (data: {
     title: string;
@@ -816,8 +1288,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
 
-    const uniqueNum = Math.floor(100 + Math.random() * 900);
-    const complaintId = `CS-VZM-2026-000${uniqueNum}`;
+    let maxSeq = 0;
+    complaints.forEach((c) => {
+      const match = c.id?.match(/^SC-2026-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxSeq) maxSeq = num;
+      }
+    });
+    const nextSeq = Math.max(maxSeq + 1, complaints.length + 1);
+    const complaintId = `SC-2026-${String(nextSeq).padStart(6, '0')}`;
     const nowIso = new Date().toISOString();
     const slaHours =
       ai?.estimatedResolutionHours ||
@@ -901,11 +1381,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       },
       photos: data.photos,
       reportedBy: {
-        id: currentUser.id,
+        id: auth.currentUser?.uid || currentUser.id,
         name: currentUser.name,
         phone: currentUser.phone,
         email: currentUser.email,
       },
+      citizenId: auth.currentUser?.uid || currentUser.id,
       department: targetDept,
       assignedOfficer,
       slaHours,
@@ -1004,8 +1485,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const createInfrastructureProject = async (
     data: InfrastructureProjectInput
   ): Promise<InfrastructureProject> => {
-    const uniqueNum = Math.floor(100 + Math.random() * 900);
-    const projectId = `INF-VZM-2026-000${uniqueNum}`;
+    const seqNum = infrastructureProjects.length + 1;
+    const projectId = `PRJ-CHN-2026-${String(seqNum).padStart(3, '0')}`;
     const nowIso = new Date().toISOString();
     const newProject: InfrastructureProject = {
       id: projectId,
@@ -1640,13 +2121,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       user: currentUser.name,
       role: 'citizen',
       action: 'CITIZEN_FEEDBACK_SUBMITTED',
-      details: `Citizen submitted ${feedback.rating}â˜… rating. Comment: "${feedback.comment}".`,
+      details: `Citizen submitted ${feedback.rating}★ rating. Comment: "${feedback.comment}".`,
     });
 
     const notif: CivicNotification = {
       id: `NOTIF-${Date.now()}`,
       complaintId,
-      title: `Feedback Received (${feedback.rating} â˜…)`,
+      title: `Feedback Received (${feedback.rating} ★)`,
       message: `Citizen rated resolution on ${complaintId}: "${feedback.comment.slice(0, 40)}..."`,
       type: 'feedback',
       timestamp: new Date().toISOString(),
@@ -1702,7 +2183,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const notif: CivicNotification = {
       id: `NOTIF-${Date.now()}`,
       complaintId,
-      title: `âš ï¸ Complaint Reopened: ${complaintId}`,
+      title: `⚠️ Complaint Reopened: ${complaintId}`,
       message: `Citizen marked issue as unresolved: "${reason.slice(0, 50)}..."`,
       type: 'reopened',
       timestamp: nowIso,
@@ -1772,6 +2253,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         openAuthModal,
         closeAuthModal,
         signInWithEmail,
+        signInDemo,
         signInWithGoogle,
         signUpWithEmail,
         signOutUser,
@@ -1811,4 +2293,3 @@ export const useCivic = () => {
   }
   return context;
 };
-

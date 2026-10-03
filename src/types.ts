@@ -1,6 +1,7 @@
 export type UserRole =
   | 'citizen'
   | 'staff'
+  | 'officer'
   | 'admin'
   | 'worker'
   | 'field_officer'
@@ -11,7 +12,7 @@ export type UserRole =
 export const normalizeUserRole = (role?: string | UserRole): UserRole => {
   const normalizedRole = String(role || 'citizen').toLowerCase();
 
-  if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff'].includes(normalizedRole)) {
+  if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff', 'officer'].includes(normalizedRole)) {
     return 'staff';
   }
 
@@ -29,9 +30,9 @@ export const getRoleDisplayName = (role: UserRole | string): string => {
     case 'citizen':
       return 'Citizen';
     case 'staff':
-      return 'Staff / Officer';
+      return 'Field Officer';
     case 'admin':
-      return 'Admin';
+      return 'Administrator';
     default:
       return 'Citizen';
   }
@@ -44,7 +45,7 @@ export type PortalRole = 'citizen' | 'staff' | 'admin';
 export const getPortalRole = (role: UserRole | string | undefined): PortalRole => {
   const r = String(role || 'citizen').toLowerCase();
   if (r === 'admin' || r === 'super_admin') return 'admin';
-  if (r === 'worker' || r === 'field_officer' || r === 'higher_official' || r === 'department_officer') return 'staff';
+  if (r === 'worker' || r === 'field_officer' || r === 'higher_official' || r === 'department_officer' || r === 'staff' || r === 'officer') return 'staff';
   return 'citizen';
 };
 
@@ -56,8 +57,8 @@ export const isStaffPortalRole = (role: UserRole | string | undefined): boolean 
 
 export const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   citizen: 'Citizen',
-  staff: 'Staff / Officer',
-  admin: 'Admin',
+  staff: 'Field Officer',
+  admin: 'Administrator',
 };
 
 export type ComplaintCategory =
@@ -76,11 +77,24 @@ export type ComplaintCategory =
   | 'Other';
 
 export type ComplaintStatus =
+  // Standard Smart Civic Lifecycle Stages
+  | 'REPORTED'
+  | 'ACKNOWLEDGED'
+  | 'PRIORITIZED'
+  | 'ASSIGNED'
+  | 'INSPECTION'
+  | 'WORK_STARTED'
+  | 'IN_PROGRESS'
+  | 'RESOLVED'
+  | 'CITIZEN_VERIFICATION'
+  | 'CLOSED'
+  | 'REOPENED'
+  // Backward-compatible display states
   | 'Submitted'
   | 'Under Review'
   | 'Verified'
-  | 'Assigned'
   | 'Accepted'
+  | 'Assigned'
   | 'In Progress'
   | 'Work Completed'
   | 'Pending Verification'
@@ -90,6 +104,15 @@ export type ComplaintStatus =
   | 'On Hold'
   | 'Escalated'
   | 'Reopened';
+
+export const normalizeComplaintStatus = (status: ComplaintStatus | string): string => {
+  const s = String(status || '').toUpperCase().replace(/[\s-]/g, '_');
+  if (s === 'SUBMITTED') return 'REPORTED';
+  if (s === 'VERIFIED') return 'ACKNOWLEDGED';
+  if (s === 'ACCEPTED') return 'ASSIGNED';
+  if (s === 'WORK_COMPLETED' || s === 'PENDING_VERIFICATION') return 'RESOLVED';
+  return s;
+};
 
 export type Severity = 'Low' | 'Medium' | 'High' | 'Critical';
 export type Priority = 'P1-Critical' | 'P2-High' | 'P3-Medium' | 'P4-Low';
@@ -110,6 +133,8 @@ export interface User {
   email: string;
   role: UserRole;
   phone?: string;
+  mobile?: string;
+  status?: 'active' | 'inactive';
   ward?: string;
   department?: MunicipalDepartment;
   avatar?: string;
@@ -237,6 +262,7 @@ export interface Complaint {
     phone?: string;
     email?: string;
   };
+  citizenId?: string;
   department?: MunicipalDepartment;
   projectId?: string;
   assignedOfficer?: AssignedOfficer;
@@ -384,37 +410,100 @@ export interface DepartmentInfo {
 }
 
 export type InfrastructureProjectType =
+  | 'Road Development'
+  | 'Road Resurfacing'
+  | 'Pothole Repair'
+  | 'Storm Water Drain'
+  | 'Drainage Development'
+  | 'Street Light Installation'
+  | 'Street Light Upgrade'
+  | 'Bus Stop Development'
+  | 'Footpath Development'
+  | 'Park Development'
+  | 'Public Toilet Development'
+  | 'School Infrastructure'
+  | 'Water Supply Infrastructure'
+  | 'Waste Management Infrastructure'
+  | 'Traffic Infrastructure'
+  | 'Bridge Development'
+  | 'Public Building Development'
+  | 'Road Safety Improvement'
+  // Backward compatibility short aliases
   | 'Road'
   | 'Drainage'
   | 'Streetlight'
   | 'Park'
   | 'Bus Stop'
   | 'School'
-  | 'Public Building';
+  | 'Public Building'
+  | 'Water Infrastructure'
+  | 'Other Civic Infrastructure';
 
 export type InfrastructureProjectStatus =
+  | 'PLANNED'
+  | 'APPROVED'
+  | 'TENDERING'
+  | 'NOT_STARTED'
+  | 'IN_PROGRESS'
+  | 'ON_HOLD'
+  | 'DELAYED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  // Backward compatibility display statuses
   | 'Planned'
   | 'In Progress'
   | 'Delayed'
   | 'Completed';
 
+export interface ProjectMilestone {
+  id: string;
+  name: string;
+  description?: string;
+  plannedDate: string;
+  actualDate?: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED' | 'Pending' | 'Overdue';
+  progress: number;
+  remarks?: string;
+}
+
 export interface InfrastructureProject {
   id: string;
   name: string;
   type: InfrastructureProjectType;
+  category?: InfrastructureProjectType;
   department: MunicipalDepartment;
   contractor: string;
+  city?: string;
+  zone?: string;
+  constituency?: string;
   location: string;
   ward: string;
   lat: number;
   lng: number;
-  budget: number;
+  budget: number; // Sanctioned budget or primary budget amount in INR
+  estimatedBudget?: number;
+  sanctionedBudget?: number;
+  releasedBudget?: number;
+  utilizedBudget?: number;
+  remainingBudget?: number;
+  announcementDate?: string;
   startDate: string;
   expectedCompletionDate: string;
-  progressPercent: number;
+  actualCompletionDate?: string;
+  progressPercent: number; // Physical progress (0 - 100)
   status: InfrastructureProjectStatus;
+  currentPhase?: string;
+  delayStatus?: 'On Track' | 'At Risk' | 'Delayed';
+  delayDays?: number;
   description: string;
+  milestones?: ProjectMilestone[];
   photos?: string[];
+  beforePhotos?: string[];
+  duringPhotos?: string[];
+  afterPhotos?: string[];
+  relatedComplaintIds?: string[];
+  responsibleOfficer?: string;
+  projectHealth?: 'Healthy' | 'Attention Required' | 'Delayed';
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -425,15 +514,32 @@ export type InfrastructureProjectInput = {
   type: InfrastructureProjectType;
   department: MunicipalDepartment;
   contractor: string;
+  city?: string;
+  zone?: string;
+  constituency?: string;
   location: string;
   ward: string;
   lat: number;
   lng: number;
   budget: number;
+  estimatedBudget?: number;
+  sanctionedBudget?: number;
+  releasedBudget?: number;
+  utilizedBudget?: number;
+  remainingBudget?: number;
+  announcementDate?: string;
   startDate: string;
   expectedCompletionDate: string;
+  actualCompletionDate?: string;
   progressPercent: number;
   status: InfrastructureProjectStatus;
+  currentPhase?: string;
+  delayStatus?: 'On Track' | 'At Risk' | 'Delayed';
   description: string;
+  milestones?: ProjectMilestone[];
   photos?: string[];
+  beforePhotos?: string[];
+  duringPhotos?: string[];
+  afterPhotos?: string[];
+  responsibleOfficer?: string;
 };

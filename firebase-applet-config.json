@@ -1,10 +1,12 @@
 {
+  "projectId": "smart-civic-a54ee",
+  "appId": "1:848695310088:web:fa5de1379118206dd6debd",
   "apiKey": "AIzaSyAFo_3odGXhpjcVJLNd5Q51pvkbiCDD4hQ",
   "authDomain": "smart-civic-a54ee.firebaseapp.com",
-  "projectId": "smart-civic-a54ee",
+  "firestoreDatabaseId": "ai-studio-smartcivicplatfo-c6b07919-e88d-4b7e-940f-6210daf54e8d",
   "storageBucket": "smart-civic-a54ee.firebasestorage.app",
   "messagingSenderId": "848695310088",
-  "appId": "1:848695310088:web:89bd29c217d1c2d1d6debd",
-  "measurementId": "G-BL68BM35B2",
-  "oAuthClientId": ""
+  "measurementId": "",
+  "oAuthClientId": "848695310088-vd12cdcs2j074nde3esunf13m0p1n2uu.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

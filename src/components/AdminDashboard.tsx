@@ -27,11 +27,27 @@ import {
   Flame,
   AlertCircle,
   FileCheck2,
+  HardHat,
+  Bell,
+  Send,
+  Compass,
+  Activity,
+  Zap,
+  CheckCircle,
+  Radio,
+  Wrench,
+  Shield,
+  Award,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, AuditLog, Complaint, AIValidity, AIPriority, getRoleDisplayName } from '../types';
+import { User, AuditLog, Complaint, AIValidity, AIPriority, getRoleDisplayName, MunicipalDepartment } from '../types';
 import { OfficialInspectionReportModal } from './OfficialInspectionReportModal';
+import { DepartmentManagement } from './DepartmentManagement';
+import { InfrastructureProjects } from './InfrastructureProjects';
+import { CivicMapView } from './CivicMapView';
+import { CivicAnalytics } from './CivicAnalytics';
+import { FIELD_OFFICERS } from '../data/seedData';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -41,11 +57,32 @@ export const AdminDashboard: React.FC = () => {
     auditLogs,
     complaints,
     setSelectedComplaint,
+    broadcastAnnouncement,
+    announcements,
   } = useCivic();
 
-  const [adminTab, setAdminTab] = useState<'ai_governance' | 'users' | 'audit' | 'complaints'>('ai_governance');
+  const [adminTab, setAdminTab] = useState<
+    | 'ai_governance'
+    | 'users'
+    | 'officers'
+    | 'complaints'
+    | 'departments'
+    | 'projects'
+    | 'map'
+    | 'analytics'
+    | 'sla'
+    | 'smart_insights'
+    | 'notifications'
+    | 'audit'
+  >('ai_governance');
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'citizen' | 'worker' | 'higher_official'>('all');
   const [auditSearch, setAuditSearch] = useState('');
+
+  // Announcement state
+  const [annTitle, setAnnTitle] = useState('');
+  const [annMessage, setAnnMessage] = useState('');
+  const [annDept, setAnnDept] = useState<MunicipalDepartment>('Public Works Department (PWD)');
+  const [annPriority, setAnnPriority] = useState<'normal' | 'urgent'>('normal');
 
   // AI Verification & Smart Routing Filters
   const { t } = useLanguage();
@@ -224,32 +261,29 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Admin Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-1 overflow-x-auto">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           onClick={() => setAdminTab('ai_governance')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             adminTab === 'ai_governance'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Sparkles className="w-4 h-4 text-indigo-300" />
-          <span>AI Verification & Smart Routing</span>
-          <span className="bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-            Live
-          </span>
+          <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+          <span>Dashboard</span>
         </button>
 
         <button
           onClick={() => setAdminTab('users')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             adminTab === 'users'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>User & Staff Approvals</span>
+          <Users className="w-3.5 h-3.5" />
+          <span>Users</span>
           {pendingApprovals.length > 0 && (
             <span className="bg-amber-400 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
               {pendingApprovals.length}
@@ -258,30 +292,123 @@ export const AdminDashboard: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setAdminTab('audit')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            adminTab === 'audit'
+          onClick={() => setAdminTab('officers')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'officers'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Chronological Audit Trail</span>
-          <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-            {auditLogs.length}
-          </span>
+          <UserCheck className="w-3.5 h-3.5" />
+          <span>Officers</span>
         </button>
 
         <button
           onClick={() => setAdminTab('complaints')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             adminTab === 'complaints'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Layers className="w-4 h-4" />
-          <span>Citywide Complaints ({complaints.length})</span>
+          <Layers className="w-3.5 h-3.5" />
+          <span>Complaints ({complaints.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('departments')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'departments'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Departments</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('projects')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'projects'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <HardHat className="w-3.5 h-3.5" />
+          <span>Infrastructure Projects</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('map')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'map'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          <span>Civic Map</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('analytics')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'analytics'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5" />
+          <span>Analytics</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('sla')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'sla'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>SLA Monitoring</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('smart_insights')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'smart_insights'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          <span>Smart Insights</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('notifications')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'notifications'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5" />
+          <span>Broadcast Notifications</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('audit')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'audit'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          <span>Audit Trail ({auditLogs.length})</span>
         </button>
       </div>
 
@@ -1159,6 +1286,389 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Officers Roster & Workload */}
+      {adminTab === 'officers' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-indigo-600" />
+                  Municipal Field Officers &amp; Staff Directory
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time roster, jurisdictional assignments, and field task workload distribution.
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {FIELD_OFFICERS.length} Registered Officers
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {FIELD_OFFICERS.map((officer) => {
+                const activeAssignedCount = complaints.filter(
+                  (c) =>
+                    c.assignedOfficer?.badgeNumber === officer.badgeNumber ||
+                    c.assignedOfficer?.name.toLowerCase() === officer.name.toLowerCase()
+                ).filter((c) => c.status !== 'Resolved' && c.status !== 'Closed').length;
+
+                return (
+                  <div
+                    key={officer.badgeNumber}
+                    className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:shadow-md transition-all space-y-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                          {officer.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-sm">{officer.name}</h4>
+                          <span className="text-[11px] font-mono text-indigo-600 font-semibold">
+                            {officer.badgeNumber}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        Active
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{officer.department}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{(officer as any).workArea || officer.ward || 'Chennai Municipal Zones'}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Active Workload:</span>
+                      <span className="font-bold text-slate-900 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {activeAssignedCount} tickets
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Departments */}
+      {adminTab === 'departments' && (
+        <DepartmentManagement />
+      )}
+
+      {/* Tab: Infrastructure Projects */}
+      {adminTab === 'projects' && (
+        <InfrastructureProjects
+          onOpenComplaint={(c) => {
+            setSelectedComplaint(c);
+            setAdminTab('complaints');
+          }}
+        />
+      )}
+
+      {/* Tab: Civic Map */}
+      {adminTab === 'map' && (
+        <CivicMapView
+          onSelectComplaint={(c) => {
+            setSelectedComplaint(c);
+            setAdminTab('complaints');
+          }}
+          onSelectProject={() => {
+            setAdminTab('projects');
+          }}
+        />
+      )}
+
+      {/* Tab: Analytics */}
+      {adminTab === 'analytics' && (
+        <CivicAnalytics />
+      )}
+
+      {/* Tab: SLA Monitoring */}
+      {adminTab === 'sla' && (
+        <div className="space-y-6">
+          {/* SLA Top KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Citywide SLA Compliance
+              </div>
+              <div className="text-3xl font-black text-emerald-600">92.4%</div>
+              <div className="text-xs text-slate-500 mt-1">Within mandated resolution window</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                P1 Critical Resolution (24h)
+              </div>
+              <div className="text-3xl font-black text-red-600">98.1%</div>
+              <div className="text-xs text-slate-500 mt-1">Urgent hazard response rate</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                P2 High Resolution (48h)
+              </div>
+              <div className="text-3xl font-black text-amber-600">89.6%</div>
+              <div className="text-xs text-slate-500 mt-1">Secondary priority window</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Average Resolution Time
+              </div>
+              <div className="text-3xl font-black text-indigo-600">18.4 hrs</div>
+              <div className="text-xs text-slate-500 mt-1">Across all 15 municipal zones</div>
+            </div>
+          </div>
+
+          {/* Active Tickets at Risk of Breach */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-500" />
+                  SLA Surveillance &amp; Priority Countdown
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Grievances nearing or exceeding mandated resolution windows requiring executive escalation.
+                </p>
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {complaints
+                .filter((c) => c.status !== 'Resolved' && c.status !== 'Closed')
+                .slice(0, 6)
+                .map((comp) => (
+                  <div key={comp.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                          {comp.id}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          comp.priority?.includes('Critical') ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {comp.priority || 'P2-High'}
+                        </span>
+                        <span className="text-xs font-bold text-slate-900">{comp.title}</span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        Ward: {comp.location.ward} • Dept: {comp.department} • Assigned: {comp.assignedOfficer?.name || 'Pending'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
+                        SLA Window: Active
+                      </span>
+                      <button
+                        onClick={() => {
+                          setSelectedComplaint(comp);
+                          setAdminTab('complaints');
+                        }}
+                        className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        Inspect
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Smart Insights */}
+      {adminTab === 'smart_insights' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                AI Smart Decision Support &amp; Hotspot Analytics
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Automated geospatial clustering, duplicate grievance consolidation, and resource optimization algorithms.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-2">
+                <h4 className="font-bold text-indigo-950 text-sm">Automated Duplicate Clustering</h4>
+                <p className="text-xs text-indigo-800/80 leading-relaxed">
+                  Consolidated {duplicateComplaints} duplicate citizen grievance submissions using photo-embedding similarity and coordinate geofencing within 50-meter radiuses.
+                </p>
+                <div className="pt-2 text-xs font-mono text-indigo-700 font-bold">
+                  Saves ~32% manual field inspection overhead
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-2">
+                <h4 className="font-bold text-amber-950 text-sm">Chennai Ward Grievance Hotspots</h4>
+                <p className="text-xs text-amber-800/80 leading-relaxed">
+                  Highest complaint concentrations identified in Ward 101 (Anna Nagar), Ward 115 (T. Nagar), and Ward 170 (Adyar) primarily concerning PWD asphalt maintenance.
+                </p>
+                <div className="pt-2 text-xs font-mono text-amber-700 font-bold">
+                  Recommended: Deploy dedicated asphalt road repair crew
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+                <h4 className="font-bold text-emerald-950 text-sm">Predictive Infrastructure Risk</h4>
+                <p className="text-xs text-emerald-800/80 leading-relaxed">
+                  Overhead low-hanging electrical lines and stormwater blockage reports have been correlated with upcoming weather advisories.
+                </p>
+                <div className="pt-2 text-xs font-mono text-emerald-700 font-bold">
+                  Priority clearance orders automatically generated
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Broadcast Notifications */}
+      {adminTab === 'notifications' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-indigo-600" />
+                Municipal Announcement &amp; Advisory Dispatcher
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Broadcast official civic notices and maintenance advisories to all citizens and field staff.
+              </p>
+            </div>
+
+            {/* Broadcast Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!annTitle.trim() || !annMessage.trim()) return;
+                broadcastAnnouncement({
+                  title: annTitle.trim(),
+                  message: annMessage.trim(),
+                  department: annDept,
+                  priority: annPriority,
+                });
+                setAnnTitle('');
+                setAnnMessage('');
+              }}
+              className="space-y-4 max-w-2xl bg-slate-50 p-5 rounded-2xl border border-slate-200"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Advisory Headline
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={annTitle}
+                  onChange={(e) => setAnnTitle(e.target.value)}
+                  placeholder="e.g. Scheduled Water Pipeline Maintenance — Anna Nagar Zone"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Advisory Message
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={annMessage}
+                  onChange={(e) => setAnnMessage(e.target.value)}
+                  placeholder="Provide complete public advisory details, affected wards, and estimated duration..."
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={annDept}
+                    onChange={(e) => setAnnDept(e.target.value as MunicipalDepartment)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    <option value="Public Works Department (PWD)">Public Works Department (PWD)</option>
+                    <option value="Water Supply & Sewerage Board">Water Supply & Sewerage Board</option>
+                    <option value="Electricity & Street Lighting">Electricity & Street Lighting</option>
+                    <option value="Solid Waste Management">Solid Waste Management</option>
+                    <option value="Public Health & Sanitation">Public Health & Sanitation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Priority Level
+                  </label>
+                  <select
+                    value={annPriority}
+                    onChange={(e) => setAnnPriority(e.target.value as 'normal' | 'urgent')}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    <option value="normal">Normal Public Advisory</option>
+                    <option value="urgent">Urgent Hazard / Disruption Alert</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Publish Municipal Broadcast</span>
+              </button>
+            </form>
+
+            {/* Existing Announcements List */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Published Municipal Advisories ({announcements.length})
+              </h3>
+              <div className="divide-y divide-slate-100">
+                {announcements.map((ann) => (
+                  <div key={ann.id} className="py-3 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        ann.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {ann.priority.toUpperCase()}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-xs">{ann.title}</h4>
+                      <span className="text-[10px] text-slate-400 ml-auto">
+                        {new Date(ann.timestamp).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">{ann.message}</p>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      Department: {ann.department}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

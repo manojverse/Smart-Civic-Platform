@@ -20,6 +20,20 @@ interface LeafletMapProps {
 }
 
 const STATUS_COLORS: Record<ComplaintStatus, string> = {
+  // Uppercase lifecycle stages
+  REPORTED: '#3b82f6',
+  ACKNOWLEDGED: '#6366f1',
+  PRIORITIZED: '#8b5cf6',
+  ASSIGNED: '#f59e0b',
+  INSPECTION: '#06b6d4',
+  WORK_STARTED: '#ea580c',
+  IN_PROGRESS: '#f97316',
+  RESOLVED: '#10b981',
+  CITIZEN_VERIFICATION: '#eab308',
+  CLOSED: '#64748b',
+  REOPENED: '#ec4899',
+
+  // Titlecase display states
   Submitted: '#3b82f6', // blue
   'Under Review': '#6366f1', // indigo
   Verified: '#8b5cf6', // purple
@@ -43,7 +57,17 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   Low: '#10b981',
 };
 
-const PROJECT_STATUS_COLORS: Record<InfrastructureProjectStatus, string> = {
+const PROJECT_STATUS_COLORS: Record<string, string> = {
+  PLANNED: '#6366f1',
+  APPROVED: '#8b5cf6',
+  TENDERING: '#0284c7',
+  NOT_STARTED: '#64748b',
+  IN_PROGRESS: '#f97316',
+  ON_HOLD: '#eab308',
+  DELAYED: '#dc2626',
+  COMPLETED: '#10b981',
+  CANCELLED: '#ef4444',
+  // Titlecase display fallbacks
   Planned: '#6366f1',
   'In Progress': '#f97316',
   Delayed: '#dc2626',
@@ -51,9 +75,9 @@ const PROJECT_STATUS_COLORS: Record<InfrastructureProjectStatus, string> = {
 };
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
-  center = [18.1067, 83.3956],
-  zoom = 13,
-  height = '420px',
+  center = [13.0827, 80.2707],
+  zoom = 12,
+  height = '480px',
   isPicker = false,
   selectedLocation,
   onLocationSelect,

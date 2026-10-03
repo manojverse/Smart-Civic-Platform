@@ -193,7 +193,22 @@ export function analyzeImageLocally(input: ImageAnalysisInput): PhotoAuthenticit
 /**
  * Main function: calls backend endpoint `/api/ai/analyze-image` if available, falls back to deterministic engine
  */
-export async function analyzePhotoAuthenticity(input: ImageAnalysisInput): Promise<PhotoAuthenticityAnalysis> {
+export async function analyzePhotoAuthenticity(
+  inputOrUrl: string | ImageAnalysisInput,
+  category?: string,
+  title?: string,
+  description?: string
+): Promise<PhotoAuthenticityAnalysis> {
+  const input: ImageAnalysisInput =
+    typeof inputOrUrl === 'string'
+      ? {
+          photoUrl: inputOrUrl,
+          reportedCategory: category,
+          reportedTitle: title,
+          reportedDescription: description,
+        }
+      : inputOrUrl;
+
   try {
     const response = await fetch('/api/ai/analyze-image', {
       method: 'POST',

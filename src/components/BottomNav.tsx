@@ -78,27 +78,45 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
           <span className="text-[10px] mt-0.5 whitespace-nowrap">{t.navMyReports}</span>
         </button>
 
-        {/* Authority / Role Portal */}
-        <button
-          onClick={() => {
-            const portalRole = getPortalRole(currentUser.role);
-            if (portalRole === 'admin') setCurrentTab('admin-portal');
-            else if (portalRole === 'staff') setCurrentTab('staff-portal');
-            else setCurrentTab('home');
-          }}
-          className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
-            ['authority', 'staff-portal', 'admin-portal', 'worker-portal', 'official-portal'].includes(currentTab)
-              ? 'text-indigo-600 font-bold'
-              : 'text-slate-500'
-          }`}
-          aria-label="Portal"
-        >
-          <Building2 className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5 whitespace-nowrap">
-            {getPortalRole(currentUser.role) === 'admin' ? 'Admin' : 
-             getPortalRole(currentUser.role) === 'staff' ? 'Portal' : 'Home'}
-          </span>
-        </button>
+        {/* Role-Specific 5th Item */}
+        {currentUser.role === 'admin' || currentUser.role === 'super_admin' ? (
+          <button
+            onClick={() => setCurrentTab('admin-portal')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
+              currentTab === 'admin-portal' || currentTab === 'admin'
+                ? 'text-purple-600 font-bold'
+                : 'text-slate-500'
+            }`}
+            aria-label="Admin Portal"
+          >
+            <Building2 className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 whitespace-nowrap">Admin</span>
+          </button>
+        ) : ['worker', 'field_officer', 'higher_official', 'department_officer', 'staff', 'officer'].includes(currentUser.role) ? (
+          <button
+            onClick={() => setCurrentTab('officer')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
+              currentTab === 'officer' || currentTab === 'worker-portal' || currentTab === 'official-portal'
+                ? 'text-indigo-600 font-bold'
+                : 'text-slate-500'
+            }`}
+            aria-label="Officer Portal"
+          >
+            <Building2 className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 whitespace-nowrap">Officer</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setCurrentTab('map')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
+              currentTab === 'map' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+            }`}
+            aria-label="Civic Map"
+          >
+            <MapPin className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 whitespace-nowrap">Map</span>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,119 +1,117 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
+
+    // ─── HELPER FUNCTIONS ──────────────────────────────────────────
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    function userRole(uid) {
-      return exists(/databases/$(database)/documents/users/$(uid))
-        ? get(/databases/$(database)/documents/users/$(uid)).data.role
-        : null;
-    }
-
-    function isCitizen() {
-      return signedIn() && userRole(request.auth.uid) == 'citizen';
-    }
-
-    function isOfficer() {
-      return signedIn() && (
-        userRole(request.auth.uid) == 'officer' ||
-        userRole(request.auth.uid) == 'staff'
-      );
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
-      return signedIn() && userRole(request.auth.uid) == 'admin';
-    }
-
-    function isOwner(userId) {
-      return signedIn() && request.auth.uid == userId;
-    }
-
-    function complaintOwner(complaint) {
-      return complaint.reportedBy != null && complaint.reportedBy.id == request.auth.uid;
-    }
-
-    function authorizedComplaintUpdate() {
-      return signedIn() && (
-        isAdmin() ||
-        (isOfficer() && resource.data.assignedOfficer != null && resource.data.assignedOfficer.id == request.auth.uid) ||
-        complaintOwner(resource.data)
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@smartcivic.test' ||
+        request.auth.token.email == 'admin@civic' ||
+        request.auth.token.email == 'manojs.n105@gmail.com'
       );
     }
 
+    function isOfficer() {
+      return isSignedIn() && (
+        request.auth.token.email == 'officer@smartcivic.test' ||
+        request.auth.token.email == 'officer@civic' ||
+        isAdmin()
+      );
+    }
+
+    function isComplaintOwner(complaintData) {
+      return isSignedIn() && (
+        (complaintData.reportedBy != null && complaintData.reportedBy.id == request.auth.uid) ||
+        complaintData.citizenId == request.auth.uid
+      );
+    }
+
+    // ─── USERS COLLECTION ──────────────────────────────────────────
+    // Every authenticated user can access their own profile users/{uid}
     match /users/{userId} {
-      allow get: if signedIn() && (isOwner(userId) || isOfficer() || isAdmin());
-      allow list: if signedIn() && (isOfficer() || isAdmin());
-
-      allow create: if signedIn() &&
-        isOwner(userId) &&
-        request.resource.data.id == request.auth.uid &&
-        request.resource.data.role == 'citizen' &&
-        request.resource.data.email == request.auth.token.email;
-
-      allow update: if signedIn() && (
+      allow get: if isSignedIn() && (
+        request.auth.uid == userId ||
         isAdmin() ||
-        (isOwner(userId) && request.resource.data.role == resource.data.role)
+        isOfficer()
       );
 
-      allow delete: if signedIn() && isAdmin();
+      allow list: if isSignedIn() && (isAdmin() || isOfficer());
+
+      allow create: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+
+      allow update: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
     }
 
+    // ─── COMPLAINTS COLLECTION ─────────────────────────────────────
     match /complaints/{complaintId} {
-      allow create: if signedIn() &&
-        request.resource.data.reportedBy != null &&
-        request.resource.data.reportedBy.id == request.auth.uid &&
-        request.resource.data.status == 'Submitted';
+      allow read: if isSignedIn();
 
-      allow get: if signedIn() && (
+      allow create: if isSignedIn();
+
+      allow update: if isSignedIn() && (
         isAdmin() ||
         isOfficer() ||
-        complaintOwner(resource.data)
+        isComplaintOwner(resource.data)
       );
 
-      allow list: if signedIn() && (
-        isAdmin() ||
-        isOfficer() ||
-        complaintOwner(resource.data)
-      );
+      allow delete: if isAdmin();
+    }
 
-      allow update: if authorizedComplaintUpdate() &&
-        request.resource.data.reportedBy.id == resource.data.reportedBy.id &&
-        request.resource.data.status in ['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resolved', 'Closed'];
-
-      allow delete: if signedIn() && isAdmin();
+    // ─── INFRASTRUCTURE PROJECTS ───────────────────────────────────
+    match /infrastructure_projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isAdmin() || isOfficer());
     }
 
     match /projects/{projectId} {
-      allow read: if signedIn() && (isCitizen() || isOfficer() || isAdmin());
-      allow create, update, delete: if signedIn() && isAdmin();
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isAdmin() || isOfficer());
     }
 
-    match /infrastructure_projects/{projectId} {
-      allow read: if signedIn() && (isCitizen() || isOfficer() || isAdmin());
-      allow create, update, delete: if signedIn() && isAdmin();
+    // ─── DEPARTMENTS ───────────────────────────────────────────────
+    match /departments/{deptId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    match /notifications/{notificationId} {
-      allow read: if signedIn() && (
-        resource.data.userId == request.auth.uid ||
-        isOfficer() ||
-        isAdmin()
-      );
-      allow create: if signedIn() && (
-        request.resource.data.userId == request.auth.uid ||
-        isAdmin() ||
-        isOfficer()
-      );
-      allow update: if signedIn() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin() ||
-        isOfficer()
-      );
-      allow delete: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    // ─── NOTIFICATIONS ─────────────────────────────────────────────
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
+    // ─── ANNOUNCEMENTS ─────────────────────────────────────────────
+    match /announcements/{annId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isAdmin() || isOfficer());
+    }
+
+    // ─── AUDIT LOGS ────────────────────────────────────────────────
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Audit logs are immutable
+    }
+
+    // Default deny for all other paths
     match /{document=**} {
       allow read, write: if false;
     }

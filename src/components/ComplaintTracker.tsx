@@ -68,21 +68,6 @@ export const ComplaintTracker: React.FC = () => {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [timeliness, setTimeliness] = useState<'very_satisfied' | 'satisfied' | 'neutral' | 'dissatisfied'>('very_satisfied');
 
-  // Current active complaint (defaults to selectedComplaint or first complaint)
-  const activeComplaint = selectedComplaint || complaints[0];
-
-  // Record user visiting complaint in real-time Firestore database for Admin view
-  useEffect(() => {
-    if (activeComplaint?.id && recordComplaintVisit) {
-      recordComplaintVisit(activeComplaint.id);
-    }
-    if (activeComplaint?.photoAnalysis) {
-      setLocalPhotoAnalysis(activeComplaint.photoAnalysis);
-    } else {
-      setLocalPhotoAnalysis(null);
-    }
-  }, [activeComplaint?.id, activeComplaint?.photoAnalysis]);
-
   // Filter complaints list
   const filteredComplaints = complaints.filter((comp) => {
     const matchQuery =
@@ -96,6 +81,24 @@ export const ComplaintTracker: React.FC = () => {
 
     return matchQuery && matchCat && matchStatus;
   });
+
+  // Current active complaint (checks exact search match, selectedComplaint, or first filtered)
+  const exactMatch = searchQuery.trim()
+    ? complaints.find((c) => c.id.toLowerCase() === searchQuery.trim().toLowerCase())
+    : null;
+  const activeComplaint = exactMatch || selectedComplaint || filteredComplaints[0] || complaints[0];
+
+  // Record user visiting complaint in real-time Firestore database for Admin view
+  useEffect(() => {
+    if (activeComplaint?.id && recordComplaintVisit) {
+      recordComplaintVisit(activeComplaint.id);
+    }
+    if (activeComplaint?.photoAnalysis) {
+      setLocalPhotoAnalysis(activeComplaint.photoAnalysis);
+    } else {
+      setLocalPhotoAnalysis(null);
+    }
+  }, [activeComplaint?.id, activeComplaint?.photoAnalysis]);
 
   const getStepIndex = (status: ComplaintStatus) => {
     const idx = LIFECYCLE_STEPS.indexOf(status);
@@ -144,7 +147,7 @@ export const ComplaintTracker: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by ID (e.g. CIVIC-2026-8812) or keyword..."
+            placeholder="Search by complaint number (e.g. SC-2026-000001) or keyword..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-xs"

@@ -46,6 +46,44 @@
         "upvotes": { "type": "number" }
       },
       "required": ["id", "title", "category", "status", "ward"]
+    },
+    "InfrastructureProject": {
+      "title": "InfrastructureProject",
+      "description": "Public infrastructure development project with budget, progress, milestones, location, and delay tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "category": { "type": "string" },
+        "department": { "type": "string" },
+        "contractor": { "type": "string" },
+        "city": { "type": "string" },
+        "zone": { "type": "string" },
+        "constituency": { "type": "string" },
+        "location": { "type": "string" },
+        "ward": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "budget": { "type": "number" },
+        "estimatedBudget": { "type": "number" },
+        "sanctionedBudget": { "type": "number" },
+        "releasedBudget": { "type": "number" },
+        "utilizedBudget": { "type": "number" },
+        "remainingBudget": { "type": "number" },
+        "startDate": { "type": "string" },
+        "expectedCompletionDate": { "type": "string" },
+        "actualCompletionDate": { "type": "string" },
+        "progressPercent": { "type": "number" },
+        "status": { "type": "string" },
+        "currentPhase": { "type": "string" },
+        "delayStatus": { "type": "string" },
+        "delayDays": { "type": "number" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "department", "ward", "status", "progressPercent"]
     }
   },
   "firestore": {
@@ -56,6 +94,14 @@
     "/complaints/{complaintId}": {
       "schema": "Complaint",
       "description": "Real-time municipal complaints and grievances"
+    },
+    "/projects/{projectId}": {
+      "schema": "InfrastructureProject",
+      "description": "Public infrastructure projects and development milestones"
+    },
+    "/infrastructure_projects/{projectId}": {
+      "schema": "InfrastructureProject",
+      "description": "Public infrastructure projects and development milestones"
     }
   }
 }

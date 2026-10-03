@@ -1,8 +1,5 @@
 {
-  "firestore": [
-    {
-      "database": "ai-studio-smartcivicplatfo-c6b07919-e88d-4b7e-940f-6210daf54e8d",
-      "rules": "firestore.rules"
-    }
-  ]
+  "firestore": {
+    "rules": "firestore.rules"
+  }
 }

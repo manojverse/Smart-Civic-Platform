@@ -28,16 +28,16 @@ export const MyComplaints: React.FC<MyComplaintsProps> = ({
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'resolved'>('all');
 
-  // Filter complaints reported by current user or show relevant user complaints
+  // Filter complaints reported strictly by current user
   const myComplaints = complaints.filter(
     (c) =>
       c.reportedBy.id === currentUser.id ||
-      c.reportedBy.email === currentUser.email ||
-      c.reportedBy.name === currentUser.name
+      (c.reportedBy.id && currentUser.firebaseUid && c.reportedBy.id === currentUser.firebaseUid) ||
+      (currentUser.email && c.reportedBy.email && c.reportedBy.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (c.reportedBy.name && currentUser.name && c.reportedBy.name.toLowerCase() === currentUser.name.toLowerCase())
   );
 
-  // If none match exactly (e.g. user switched role), show active citizen list
-  const displayComplaints = myComplaints.length > 0 ? myComplaints : complaints.slice(0, 3);
+  const displayComplaints = myComplaints;
 
   const filtered = displayComplaints.filter((c) => {
     if (statusFilter === 'active') {

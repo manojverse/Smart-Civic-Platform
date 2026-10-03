@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CivicProvider, useCivic } from './context/CivicContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
@@ -15,6 +15,7 @@ import { UserProfileModal } from './components/UserProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { LoginPage } from './components/LoginPage';
 import { UserDatabaseView } from './components/UserDatabaseView';
+import { OfficerDashboard } from './components/OfficerDashboard';
 import { WorkerDashboard } from './components/WorkerDashboard';
 import { HigherOfficialDashboard } from './components/HigherOfficialDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -24,10 +25,13 @@ import { CivicSenseAI } from './components/CivicSenseAI';
 import { InfrastructureProjects } from './components/InfrastructureProjects';
 import { BottomNav } from './components/BottomNav';
 import { Complaint } from './types';
-import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X, MapPin, BarChart3, Building2 } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, AlertTriangle, Info, X, MapPin, BarChart3, Building2, Shield, Lock, ArrowLeft } from 'lucide-react';
 
 const CivicApp: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    return typeof window !== 'undefined' ? window.location.pathname : '/';
+  });
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const {
     currentUser,
@@ -40,37 +44,67 @@ const CivicApp: React.FC = () => {
     authModalMode,
     recordComplaintVisit,
     isAuthenticated,
+    signOutUser,
   } = useCivic();
 
   const normalizedRole = (() => {
     const role = String(currentUser?.role || 'citizen').toLowerCase();
-    if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff'].includes(role)) return 'staff';
+    if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff', 'officer'].includes(role)) return 'staff';
     if (['admin', 'super_admin'].includes(role)) return 'admin';
+    if (role === 'unconfigured') return 'unconfigured';
     return 'citizen';
   })();
 
+  // Synchronize route navigation with browser history
+  const navigateTo = useCallback((path: string, tab?: string) => {
+    if (typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+    }
+    setCurrentPath(path);
+    if (tab) {
+      setCurrentTab(tab);
+    }
+  }, []);
+
+  // Listen for browser forward/back buttons
   useEffect(() => {
-    if (!isAuthenticated) return;
+    const handlePopState = () => {
+      const p = window.location.pathname;
+      setCurrentPath(p);
+      if (p === '/officer') setCurrentTab('officer');
+      else if (p === '/admin') setCurrentTab('admin-portal');
+      else if (p === '/citizen') setCurrentTab('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
-    if (normalizedRole === 'citizen' && ['authority', 'users-db', 'admin-portal', 'worker-portal', 'official-portal'].includes(currentTab)) {
-      setCurrentTab('home');
-    }
-
-    if (normalizedRole === 'staff' && ['users-db', 'admin-portal'].includes(currentTab)) {
-      setCurrentTab('tracking');
-    }
-  }, [currentTab, isAuthenticated, normalizedRole]);
-
+  // Initial redirect upon login based on authoritative role from Firestore
   const prevAuthRef = useRef(false);
   useEffect(() => {
     if (isAuthenticated && !prevAuthRef.current) {
       prevAuthRef.current = true;
-      if (normalizedRole === 'admin') setCurrentTab('admin-portal');
-      else if (normalizedRole === 'staff') setCurrentTab('worker-portal');
-      else setCurrentTab('home');
+      const initialPath = window.location.pathname;
+
+      if (initialPath === '/admin') {
+        setCurrentTab('admin-portal');
+      } else if (initialPath === '/officer') {
+        setCurrentTab('officer');
+      } else if (initialPath === '/citizen') {
+        setCurrentTab('home');
+      } else {
+        // Default landing route based on authoritative role
+        if (normalizedRole === 'admin') {
+          navigateTo('/admin', 'admin-portal');
+        } else if (normalizedRole === 'staff') {
+          navigateTo('/officer', 'officer');
+        } else {
+          navigateTo('/citizen', 'home');
+        }
+      }
     }
     if (!isAuthenticated) prevAuthRef.current = false;
-  }, [isAuthenticated, normalizedRole]);
+  }, [isAuthenticated, normalizedRole, navigateTo]);
 
   const handleTrackComplaint = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
@@ -78,7 +112,46 @@ const CivicApp: React.FC = () => {
       recordComplaintVisit(complaint.id);
     }
     setCurrentTab('tracking');
+    if (normalizedRole === 'citizen') {
+      navigateTo('/citizen', 'tracking');
+    }
   };
+
+  const handleTabChange = (tab: string) => {
+    setCurrentTab(tab);
+    if (tab === 'officer' || tab === 'worker-portal' || tab === 'official-portal') {
+      navigateTo('/officer', tab);
+    } else if (tab === 'admin' || tab === 'admin-portal') {
+      navigateTo('/admin', tab);
+    } else {
+      navigateTo('/citizen', tab);
+    }
+  };
+
+  // If user is authenticated but role is unconfigured
+  if (isAuthenticated && (currentUser?.role === 'unconfigured' || !currentUser?.role)) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xl">
+          <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Account Role Not Configured</h2>
+          <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+            Your account role is not configured. Please contact the administrator.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={() => signOutUser()}
+              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              Sign Out &amp; Return to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const content = !isAuthenticated ? (
     <LoginPage />
@@ -118,7 +191,7 @@ const CivicApp: React.FC = () => {
       {/* Main Navigation Header */}
       <Navbar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleTabChange}
         onOpenProfile={() => setShowProfileModal(true)}
       />
 
@@ -126,7 +199,7 @@ const CivicApp: React.FC = () => {
       <main className="flex-1 pb-20 md:pb-0">
         {currentTab === 'home' && (
           <CivicHome
-            onNavigate={(tab) => setCurrentTab(tab)}
+            onNavigate={(tab) => handleTabChange(tab)}
             onSelectComplaint={handleTrackComplaint}
           />
         )}
@@ -136,7 +209,7 @@ const CivicApp: React.FC = () => {
         {currentTab === 'my-complaints' && (
           <MyComplaints
             onTrackComplaint={handleTrackComplaint}
-            onNavigateToReport={() => setCurrentTab('report')}
+            onNavigateToReport={() => handleTabChange('report')}
           />
         )}
         {currentTab === 'tracking' && <ComplaintTracker />}
@@ -151,7 +224,7 @@ const CivicApp: React.FC = () => {
             onSelectComplaint={handleTrackComplaint}
             onSelectProject={(project) => {
               setSelectedProject(project);
-              setCurrentTab('projects');
+              handleTabChange('projects');
             }}
           />
         )}
@@ -159,68 +232,74 @@ const CivicApp: React.FC = () => {
           <InfrastructureProjects
             onOpenComplaint={(complaint) => {
               setSelectedComplaint(complaint);
-              setCurrentTab('tracking');
+              handleTabChange('tracking');
             }}
           />
         )}
         {currentTab === 'tips' && <CivicTips />}
         {currentTab === 'services' && (
-          <SmartCityServices onReportIssue={() => setCurrentTab('report')} />
+          <SmartCityServices onReportIssue={() => handleTabChange('report')} />
         )}
         {currentTab === 'future' && <FutureScope />}
-        {currentTab === 'worker-portal' && (
+        {(currentTab === 'officer' || currentTab === 'worker-portal' || currentTab === 'official-portal' || currentTab === 'staff-portal') && (
           normalizedRole === 'staff' || normalizedRole === 'admin' ? (
-            <WorkerDashboard />
+            <OfficerDashboard />
           ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
-              <div className="text-4xl mb-3">🚫</div>
-              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
-              <p className="text-sm text-slate-500 mt-1">Staff / Officer credentials required.</p>
-              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            <div className="flex flex-col items-center justify-center min-h-[65vh] p-6 text-center animate-in fade-in">
+              <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
+                <ShieldAlert className="w-10 h-10" />
+              </div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h1>
+              <p className="text-sm text-slate-600 max-w-md mt-2 leading-relaxed">
+                Field Officer credentials are required to access the Officer Portal. Your current account does not have officer privileges.
+              </p>
+              <button
+                onClick={() => handleTabChange('home')}
+                className="mt-6 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Return to Citizen Portal</span>
+              </button>
             </div>
           )
         )}
-        {currentTab === 'official-portal' && (
-          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
-            <HigherOfficialDashboard />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
-              <div className="text-4xl mb-3">🚫</div>
-              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
-              <p className="text-sm text-slate-500 mt-1">Officer credentials required.</p>
-              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
-            </div>
-          )
-        )}
-        {currentTab === 'admin-portal' && (
+        {(currentTab === 'admin' || currentTab === 'admin-portal') && (
           normalizedRole === 'admin' ? (
             <AdminDashboard />
           ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
-              <div className="text-4xl mb-3">🚫</div>
-              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
-              <p className="text-sm text-slate-500 mt-1">Administrator credentials required.</p>
-              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
+            <div className="flex flex-col items-center justify-center min-h-[65vh] p-6 text-center animate-in fade-in">
+              <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
+                <ShieldAlert className="w-10 h-10" />
+              </div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h1>
+              <p className="text-sm text-slate-600 max-w-md mt-2 leading-relaxed">
+                Administrator credentials are required to access the Admin Portal. Your current account does not have municipal administration privileges.
+              </p>
+              <button
+                onClick={() => {
+                  if (normalizedRole === 'staff') {
+                    handleTabChange('officer');
+                  } else {
+                    handleTabChange('home');
+                  }
+                }}
+                className="mt-6 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>
+                  {normalizedRole === 'staff'
+                    ? 'Return to Officer Portal'
+                    : 'Return to Citizen Portal'}
+                </span>
+              </button>
             </div>
           )
         )}
         {currentTab === 'citizen-portal' && (
           <CivicHome
-            onNavigate={(tab) => setCurrentTab(tab)}
+            onNavigate={(tab) => handleTabChange(tab)}
             onSelectComplaint={handleTrackComplaint}
           />
-        )}
-        {currentTab === 'staff-portal' && (
-          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
-            <HigherOfficialDashboard />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
-              <div className="text-4xl mb-3">🚫</div>
-              <h2 className="text-lg font-bold text-slate-700">Access Restricted</h2>
-              <p className="text-sm text-slate-500 mt-1">Staff / Officer credentials required.</p>
-              <button onClick={() => setCurrentTab('home')} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Go to Home</button>
-            </div>
-          )
         )}
       </main>
 

@@ -79,10 +79,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           {/* Brand wordmark */}
           <div
             className="flex items-center gap-2 cursor-pointer group shrink-0"
-            onClick={() => setCurrentTab('home')}
+            onClick={() => {
+              if (isAdmin) setCurrentTab('admin-portal');
+              else if (isStaff) setCurrentTab('officer');
+              else setCurrentTab('home');
+            }}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && setCurrentTab('home')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (isAdmin) setCurrentTab('admin-portal');
+                else if (isStaff) setCurrentTab('officer');
+                else setCurrentTab('home');
+              }
+            }}
             aria-label="Smart Civic Home"
           >
             <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm group-hover:bg-emerald-700 transition-colors">
@@ -106,90 +116,48 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-0.5" aria-label="Main navigation">
-            {/* Citizen-facing tabs (always visible) */}
-            <button
-              onClick={() => setCurrentTab('home')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'home'
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-              aria-current={currentTab === 'home' ? 'page' : undefined}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>{t.navOverview}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('report')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'report'
-                  ? 'bg-emerald-50 text-emerald-700 font-semibold ring-1 ring-emerald-200'
-                  : 'text-emerald-700 hover:bg-emerald-50'
-              }`}
-              aria-current={currentTab === 'report' ? 'page' : undefined}
-            >
-              <PlusCircle className="w-4 h-4 text-emerald-600" />
-              <span>{t.navReport}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('my-complaints')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'my-complaints'
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-              aria-current={currentTab === 'my-complaints' ? 'page' : undefined}
-            >
-              <FileText className="w-4 h-4" />
-              <span>{t.navMyReports}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('map')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'map'
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-              aria-current={currentTab === 'map' ? 'page' : undefined}
-            >
-              <MapPin className="w-4 h-4" />
-              <span>Civic Map</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('projects')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'projects'
-                  ? 'bg-teal-50 text-teal-700 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-              aria-current={currentTab === 'projects' ? 'page' : undefined}
-            >
-              <HardHat className="w-4 h-4 text-teal-600" />
-              <span>Projects</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('analytics')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                currentTab === 'analytics'
-                  ? 'bg-purple-50 text-purple-700 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-              aria-current={currentTab === 'analytics' ? 'page' : undefined}
-            >
-              <BarChart3 className="w-4 h-4 text-purple-600" />
-              <span>Analytics</span>
-            </button>
-
-            {/* Staff/Admin-only divider and links */}
-            {isStaff && (
+          <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
+            {/* CITIZEN PORTAL NAVIGATION */}
+            {!isStaff && !isAdmin && (
               <>
-                <div className="h-5 w-px bg-slate-200 mx-1" />
+                <button
+                  onClick={() => setCurrentTab('home')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'home'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'home' ? 'page' : undefined}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>{t.navOverview}</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('report')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'report'
+                      ? 'bg-emerald-50 text-emerald-700 font-semibold ring-1 ring-emerald-200'
+                      : 'text-emerald-700 hover:bg-emerald-50'
+                  }`}
+                  aria-current={currentTab === 'report' ? 'page' : undefined}
+                >
+                  <PlusCircle className="w-4 h-4 text-emerald-600" />
+                  <span>{t.navReport}</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('my-complaints')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'my-complaints'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'my-complaints' ? 'page' : undefined}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{t.navMyReports}</span>
+                </button>
 
                 <button
                   onClick={() => setCurrentTab('tracking')}
@@ -201,20 +169,115 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   aria-current={currentTab === 'tracking' ? 'page' : undefined}
                 >
                   <FolderOpen className="w-4 h-4 text-slate-400" />
-                  <span>Complaints</span>
+                  <span>Track Issue</span>
                 </button>
 
                 <button
-                  onClick={() => setCurrentTab('authority')}
+                  onClick={() => setCurrentTab('map')}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    currentTab === 'authority'
-                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                    currentTab === 'map'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
-                  aria-current={currentTab === 'authority' ? 'page' : undefined}
+                  aria-current={currentTab === 'map' ? 'page' : undefined}
                 >
-                  <Building2 className="w-4 h-4 text-blue-600" />
-                  <span>Authority</span>
+                  <MapPin className="w-4 h-4" />
+                  <span>Civic Map</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('projects')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'projects'
+                      ? 'bg-teal-50 text-teal-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  aria-current={currentTab === 'projects' ? 'page' : undefined}
+                >
+                  <HardHat className="w-4 h-4 text-teal-600" />
+                  <span>Projects</span>
+                </button>
+              </>
+            )}
+
+            {/* OFFICER PORTAL NAVIGATION */}
+            {isStaff && !isAdmin && (
+              <>
+                <button
+                  onClick={() => setCurrentTab('officer')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
+                    currentTab === 'officer' || currentTab === 'worker-portal' || currentTab === 'official-portal' || currentTab === 'staff-portal'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Officer Portal</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('tracking')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'tracking'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <FolderOpen className="w-4 h-4 text-slate-400" />
+                  <span>Assigned Tasks</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('map')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'map'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Civic Map</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('projects')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'projects'
+                      ? 'bg-teal-50 text-teal-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <HardHat className="w-4 h-4 text-teal-600" />
+                  <span>Projects</span>
+                </button>
+              </>
+            )}
+
+            {/* ADMIN PORTAL NAVIGATION */}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setCurrentTab('admin-portal')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
+                    currentTab === 'admin-portal' || currentTab === 'admin'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Admin Portal</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('tracking')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'tracking'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <FolderOpen className="w-4 h-4 text-slate-400" />
+                  <span>Complaints</span>
                 </button>
 
                 <button
@@ -224,17 +287,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                       ? 'bg-blue-50 text-blue-700 font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
-                  aria-current={currentTab === 'departments' ? 'page' : undefined}
                 >
-                  <Users className="w-4 h-4 text-blue-600" />
+                  <Building2 className="w-4 h-4 text-blue-600" />
                   <span>Departments</span>
                 </button>
-              </>
-            )}
 
-            {/* Admin-only links */}
-            {isAdmin && (
-              <>
+                <button
+                  onClick={() => setCurrentTab('projects')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'projects'
+                      ? 'bg-teal-50 text-teal-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <HardHat className="w-4 h-4 text-teal-600" />
+                  <span>Projects</span>
+                </button>
+
                 <button
                   onClick={() => setCurrentTab('users-db')}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
@@ -242,7 +311,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                       ? 'bg-purple-50 text-purple-700 font-semibold ring-1 ring-purple-200'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
-                  aria-current={currentTab === 'users-db' ? 'page' : undefined}
                 >
                   <Database className="w-4 h-4 text-purple-600" />
                   <span>Users</span>
@@ -250,37 +318,31 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                     {registeredUsers.length}
                   </span>
                 </button>
+
+                <button
+                  onClick={() => setCurrentTab('analytics')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'analytics'
+                      ? 'bg-purple-50 text-purple-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 text-purple-600" />
+                  <span>Analytics</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('map')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'map'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Civic Map</span>
+                </button>
               </>
-            )}
-
-            {/* Staff Portal button */}
-            {isStaff && (
-              <button
-                onClick={() => setCurrentTab('staff-portal')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  currentTab === 'staff-portal' || currentTab === 'worker-portal' || currentTab === 'official-portal'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Briefcase className="w-4 h-4" />
-                Staff Portal
-              </button>
-            )}
-
-            {/* Admin Portal button */}
-            {isAdmin && (
-              <button
-                onClick={() => setCurrentTab('admin-portal')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  currentTab === 'admin-portal'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Admin Portal
-              </button>
             )}
           </nav>
 

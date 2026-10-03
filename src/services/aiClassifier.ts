@@ -223,10 +223,19 @@ function calculateTextSimilarity(text1: string, text2: string): number {
 }
 
 export function findPotentialDuplicates(
-  newComplaint: { title: string; description: string; category: string; lat: number; lng: number },
+  newComplaint: {
+    title: string;
+    description: string;
+    category: string;
+    lat?: number;
+    lng?: number;
+    location?: { lat: number; lng: number; address?: string; ward?: string };
+  },
   existingComplaints: Complaint[]
 ): DuplicateMatch[] {
   const matches: DuplicateMatch[] = [];
+  const targetLat = typeof newComplaint.lat === 'number' ? newComplaint.lat : newComplaint.location?.lat ?? 13.0827;
+  const targetLng = typeof newComplaint.lng === 'number' ? newComplaint.lng : newComplaint.location?.lng ?? 80.2707;
 
   existingComplaints.forEach((comp) => {
     // Check if open or recently active
@@ -235,8 +244,8 @@ export function findPotentialDuplicates(
     }
 
     const distance = getDistanceFromLatLonInMeters(
-      newComplaint.lat,
-      newComplaint.lng,
+      targetLat,
+      targetLng,
       comp.location.lat,
       comp.location.lng
     );
