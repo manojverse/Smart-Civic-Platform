@@ -174,12 +174,12 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
             </div>
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-semibold block">Administrative Ward</span>
-              <span className="font-semibold text-slate-800 truncate block">{complaint.location.ward}</span>
+              <span className="font-semibold text-slate-800 truncate block">{complaint.location?.ward || 'Unassigned Ward'}</span>
             </div>
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-semibold block">{t.targetSla}</span>
               <span className="font-mono font-bold text-emerald-700">
-                {complaint.slaHours || 24} Hours ({complaint.priority})
+                {complaint.slaHours || 24} Hours ({complaint.priority || 'Normal'})
               </span>
             </div>
           </div>
@@ -196,11 +196,11 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
               <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">
                 <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>
-                  {complaint.location.address}
-                  {complaint.location.landmark && ` (Landmark: ${complaint.location.landmark})`}
+                  {complaint.location?.address || 'Ward location logged'}
+                  {complaint.location?.landmark && ` (Landmark: ${complaint.location.landmark})`}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400 ml-auto">
-                  GPS: {complaint.location.lat.toFixed(4)}, {complaint.location.lng.toFixed(4)}
+                  GPS: {typeof complaint.location?.lat === 'number' && typeof complaint.location?.lng === 'number' ? `${complaint.location.lat.toFixed(4)}, ${complaint.location.lng.toFixed(4)}` : 'Recorded'}
                 </span>
               </div>
             </div>
@@ -310,7 +310,7 @@ export const OfficialInspectionReportModal: React.FC<OfficialInspectionReportMod
                   </p>
                 </div>
 
-                {photoAnalysis?.detectedHazards && photoAnalysis.detectedHazards.length > 0 && (
+                {Array.isArray(photoAnalysis?.detectedHazards) && photoAnalysis.detectedHazards.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {photoAnalysis.detectedHazards.map((h, i) => (
                       <span

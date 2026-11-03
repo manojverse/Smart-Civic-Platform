@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { CivicProvider, useCivic } from './context/CivicContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeToggle } from './components/ThemeToggle';
 import { Navbar } from './components/Navbar';
 import { CivicHome } from './components/CivicHome';
 import { ReportIssue } from './components/ReportIssue';
@@ -21,7 +24,7 @@ import { HigherOfficialDashboard } from './components/HigherOfficialDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SmartCityServices } from './components/SmartCityServices';
 import { FutureScope } from './components/FutureScope';
-import { CivicSenseAI } from './components/CivicSenseAI';
+import { SmartCivicAI } from './components/SmartCivicAI';
 import { InfrastructureProjects } from './components/InfrastructureProjects';
 import { BottomNav } from './components/BottomNav';
 import { Complaint } from './types';
@@ -47,11 +50,21 @@ const CivicApp: React.FC = () => {
     signOutUser,
   } = useCivic();
 
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const isDepartmentOfficer =
+    !isAdmin &&
+    (currentUser?.role === 'department_officer' ||
+      currentUser?.role === 'higher_official' ||
+      currentUser?.role === 'officer' ||
+      currentUser?.role === 'field_officer' ||
+      currentUser?.role === 'worker' ||
+      currentUser?.role === 'staff');
+  const isCitizen = !isDepartmentOfficer && !isAdmin;
+
   const normalizedRole = (() => {
-    const role = String(currentUser?.role || 'citizen').toLowerCase();
-    if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff', 'officer'].includes(role)) return 'staff';
-    if (['admin', 'super_admin'].includes(role)) return 'admin';
-    if (role === 'unconfigured') return 'unconfigured';
+    if (isAdmin) return 'admin';
+    if (isDepartmentOfficer) return 'department_officer';
+    if ((currentUser?.role as any) === 'unconfigured') return 'unconfigured';
     return 'citizen';
   })();
 
@@ -93,11 +106,11 @@ const CivicApp: React.FC = () => {
       } else if (initialPath === '/citizen') {
         setCurrentTab('home');
       } else {
-        // Default landing route based on authoritative role
+        // Default landing route based on authoritative role (3 Portals: Admin, Department Officer, Citizen)
         if (normalizedRole === 'admin') {
           navigateTo('/admin', 'admin-portal');
-        } else if (normalizedRole === 'staff') {
-          navigateTo('/officer', 'officer');
+        } else if (normalizedRole === 'department_officer') {
+          navigateTo('/officer', 'official-portal');
         } else {
           navigateTo('/citizen', 'home');
         }
@@ -129,24 +142,27 @@ const CivicApp: React.FC = () => {
   };
 
   // If user is authenticated but role is unconfigured
-  if (isAuthenticated && (currentUser?.role === 'unconfigured' || !currentUser?.role)) {
+  if (isAuthenticated && ((currentUser?.role as any) === 'unconfigured' || !currentUser?.role)) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xl">
-          <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 text-center shadow-xl">
+          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Account Role Not Configured</h2>
-          <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Account Role Not Configured</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
             Your account role is not configured. Please contact the administrator.
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col gap-2">
             <button
               onClick={() => signOutUser()}
-              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
               Sign Out &amp; Return to Login
             </button>
+            <div className="flex justify-center pt-2">
+              <ThemeToggle variant="segmented" />
+            </div>
           </div>
         </div>
       </div>
@@ -156,7 +172,7 @@ const CivicApp: React.FC = () => {
   const content = !isAuthenticated ? (
     <LoginPage />
   ) : (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-150">
       {/* Real-time Event Toast Banner */}
       {activeToast && (
         <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-700 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-3">
@@ -204,7 +220,10 @@ const CivicApp: React.FC = () => {
           />
         )}
         {currentTab === 'report' && (
-          <ReportIssue onTrackComplaint={handleTrackComplaint} />
+          <ReportIssue
+            onTrackComplaint={handleTrackComplaint}
+            onNavigate={(tab) => handleTabChange(tab)}
+          />
         )}
         {currentTab === 'my-complaints' && (
           <MyComplaints
@@ -236,22 +255,24 @@ const CivicApp: React.FC = () => {
             }}
           />
         )}
-        {currentTab === 'tips' && <CivicTips />}
+        {currentTab === 'tips' && <CivicTips onNavigate={(tab) => handleTabChange(tab)} />}
         {currentTab === 'services' && (
           <SmartCityServices onReportIssue={() => handleTabChange('report')} />
         )}
         {currentTab === 'future' && <FutureScope />}
-        {(currentTab === 'officer' || currentTab === 'worker-portal' || currentTab === 'official-portal' || currentTab === 'staff-portal') && (
-          normalizedRole === 'staff' || normalizedRole === 'admin' ? (
+
+        {/* UNIFIED DEPARTMENT OFFICER PORTAL (Includes integrated field operations) */}
+        {(currentTab === 'officer' || currentTab === 'official-portal' || currentTab === 'staff-portal' || currentTab === 'worker-portal') && (
+          isDepartmentOfficer || isAdmin ? (
             <OfficerDashboard />
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[65vh] p-6 text-center animate-in fade-in">
               <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
                 <ShieldAlert className="w-10 h-10" />
               </div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h1>
-              <p className="text-sm text-slate-600 max-w-md mt-2 leading-relaxed">
-                Field Officer credentials are required to access the Officer Portal. Your current account does not have officer privileges.
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Access Restricted</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mt-2 leading-relaxed">
+                Department Officer credentials are required to access the Department Officer Portal. Your current account does not have departmental privileges.
               </p>
               <button
                 onClick={() => handleTabChange('home')}
@@ -263,22 +284,24 @@ const CivicApp: React.FC = () => {
             </div>
           )
         )}
+
+        {/* ADMINISTRATOR PORTAL */}
         {(currentTab === 'admin' || currentTab === 'admin-portal') && (
-          normalizedRole === 'admin' ? (
+          isAdmin ? (
             <AdminDashboard />
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[65vh] p-6 text-center animate-in fade-in">
               <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
                 <ShieldAlert className="w-10 h-10" />
               </div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h1>
-              <p className="text-sm text-slate-600 max-w-md mt-2 leading-relaxed">
-                Administrator credentials are required to access the Admin Portal. Your current account does not have municipal administration privileges.
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Access Restricted</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mt-2 leading-relaxed">
+                Administrator credentials are required to access the Municipal Administration Portal.
               </p>
               <button
                 onClick={() => {
-                  if (normalizedRole === 'staff') {
-                    handleTabChange('officer');
+                  if (isDepartmentOfficer) {
+                    handleTabChange('official-portal');
                   } else {
                     handleTabChange('home');
                   }
@@ -287,14 +310,15 @@ const CivicApp: React.FC = () => {
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>
-                  {normalizedRole === 'staff'
-                    ? 'Return to Officer Portal'
+                  {isDepartmentOfficer
+                    ? 'Return to Department Officer Portal'
                     : 'Return to Citizen Portal'}
                 </span>
               </button>
             </div>
           )
         )}
+
         {currentTab === 'citizen-portal' && (
           <CivicHome
             onNavigate={(tab) => handleTabChange(tab)}
@@ -304,7 +328,7 @@ const CivicApp: React.FC = () => {
       </main>
 
       {/* Floating Bilingual AI Assistant */}
-      <CivicSenseAI onNavigate={(tab) => setCurrentTab(tab)} />
+      <SmartCivicAI onNavigate={(tab) => setCurrentTab(tab)} />
 
       {/* Mobile Responsive Bottom Navigation */}
       <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} />
@@ -362,10 +386,18 @@ const CivicApp: React.FC = () => {
             ))}
           </div>
 
-          {/* Copyright */}
-          <div className="pt-4 border-t border-slate-900 text-slate-600 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>© 2026 Smart Civic Platform. All rights reserved.</span>
-            <span className="text-slate-700">Development &amp; Complaint Resolution Platform · v2.0</span>
+          {/* Copyright & Theme Quick Switcher */}
+          <div className="pt-4 border-t border-slate-900 text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <span>© 2026 Smart Civic Platform. All rights reserved.</span>
+              <span className="hidden sm:inline text-slate-700">·</span>
+              <span className="text-slate-600">Development &amp; Complaint Resolution Platform · v2.0</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">Theme</span>
+              <ThemeToggle variant="segmented" />
+            </div>
           </div>
         </div>
       </footer>
@@ -386,10 +418,14 @@ const CivicApp: React.FC = () => {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <CivicProvider>
-        <CivicApp />
-      </CivicProvider>
-    </LanguageProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <LanguageProvider>
+          <CivicProvider>
+            <CivicApp />
+          </CivicProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

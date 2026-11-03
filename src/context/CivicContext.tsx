@@ -23,6 +23,9 @@ import {
   PhotoAuthenticityAnalysis,
   InfrastructureProject,
   InfrastructureProjectInput,
+  OfficerTask,
+  StatusHistoryItem,
+  AppealRecord,
   getRoleDisplayName,
 } from '../types';
 import {
@@ -34,6 +37,7 @@ import {
   MUNICIPAL_ANNOUNCEMENTS,
   INITIAL_AUDIT_LOGS,
   INITIAL_PROJECTS,
+  INITIAL_OFFICER_TASKS,
 } from '../data/seedData';
 import { classifyComplaint } from '../services/aiClassifier';
 import { findBestWorkerForComplaint, WorkerCandidate } from '../services/workerAssignment';
@@ -45,6 +49,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  deleteDoc,
   query,
   where,
   onSnapshot,
@@ -54,6 +59,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updatePassword,
+  sendPasswordResetEmail,
   googleProvider,
   isGoogleAuthConfigured,
   signInWithPopup,
@@ -64,13 +70,21 @@ import {
   DEMO_ACCOUNTS,
   handleFirestoreError,
   OperationType,
+  safeGetDoc,
+  safeSetDoc,
 } from '../services/firebase';
 
 interface CivicContextType {
   currentUser: User;
   isAuthenticated: boolean;
   setCurrentUser: (user: User) => void;
+  resetPassword: (email: string) => Promise<void>;
   complaints: Complaint[];
+  myComplaints: Complaint[];
+  canAccessComplaint: (complaint: Complaint) => boolean;
+  canEditProject: (project: InfrastructureProject) => boolean;
+  getAllowedNextStatuses: (currentStatus: ComplaintStatus) => ComplaintStatus[];
+  deleteComplaint: (complaintId: string) => Promise<void>;
   notifications: CivicNotification[];
   selectedComplaint: Complaint | null;
   setSelectedComplaint: (complaint: Complaint | null) => void;
@@ -82,6 +96,18 @@ interface CivicContextType {
     projectId: string,
     data: InfrastructureProjectInput
   ) => Promise<InfrastructureProject | null>;
+  deleteInfrastructureProject: (projectId: string) => Promise<void>;
+
+  // Officer Tasks State & Operations
+  officerTasks: OfficerTask[];
+  createOfficerTask: (data: Omit<OfficerTask, 'id' | 'createdAt' | 'updatedAt'>) => Promise<OfficerTask>;
+  updateOfficerTask: (taskId: string, updates: Partial<OfficerTask>) => Promise<void>;
+
+  // Comprehensive Complaint Operational Update
+  updateComplaintOperationalFields: (
+    complaintId: string,
+    fields: Partial<Complaint> & { remarks?: string }
+  ) => Promise<void>;
 
   // Real-time Database Collections
   registeredUsers: RegisteredUserRecord[];
@@ -121,13 +147,20 @@ interface CivicContextType {
     title: string;
     description: string;
     category: any;
+    subcategory?: string;
     severity: Severity;
+    department?: MunicipalDepartment;
+    district?: string;
+    city?: string;
+    zone?: string;
     address: string;
     landmark?: string;
     ward: string;
     lat: number;
     lng: number;
     photos: string[];
+    supportingDocName?: string;
+    declarationAccepted?: boolean;
     aiResult?: AIClassificationResult;
     verificationResult?: AIVerificationResult;
     photoAnalysis?: PhotoAuthenticityAnalysis;
@@ -176,13 +209,25 @@ interface CivicContextType {
   approveUser: (userId: string) => void;
   rejectUser: (userId: string) => void;
   toggleUserActiveStatus: (userId: string) => void;
+  toggleDutyStatus: () => Promise<void>;
   addAuditLog: (entry: Omit<AuditLog, 'id' | 'timestamp'>) => void;
 
   // Shared Actions
   updatePriority: (complaintId: string, priority: Priority) => void;
   addInternalNote: (complaintId: string, noteText: string) => void;
   submitFeedback: (complaintId: string, feedback: CitizenFeedback) => void;
-  reopenComplaint: (complaintId: string, reason: string) => void;
+  reopenComplaint: (
+    complaintId: string,
+    reason: string,
+    additionalDescription?: string,
+    photoUrl?: string
+  ) => void;
+  reviewAppeal: (
+    complaintId: string,
+    appealId: string,
+    decision: 'Accepted' | 'Rejected',
+    reviewRemarks: string
+  ) => void;
   upvoteComplaint: (complaintId: string) => void;
 
   markNotificationRead: (notifId: string) => void;
@@ -193,11 +238,44 @@ interface CivicContextType {
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
 
-const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v3';
-const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v3';
-const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v3';
-const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v3';
-const STORAGE_KEY_PROJECTS = 'Smart Civic_projects_v2';
+const STORAGE_KEY_COMPLAINTS = 'Smart Civic_complaints_v5';
+const STORAGE_KEY_NOTIFS = 'Smart Civic_notifs_v4';
+const STORAGE_KEY_AUDIT = 'Smart Civic_audit_v4';
+const STORAGE_KEY_ANNOUNCEMENTS = 'Smart Civic_announcements_v4';
+const STORAGE_KEY_PROJECTS = 'Smart Civic_projects_v3';
+const STORAGE_KEY_TASKS = 'Smart Civic_tasks_v2';
+const STORAGE_KEY_USERS = 'Smart Civic_registered_users_v2';
+
+const DEMO_CITIZEN_EMAILS = new Set([
+  'citizen@civic',
+  'citizen@smartcivic.test',
+  'citizen@smartcivic.org',
+  'citizen.demo@smartcivic.test',
+  'citizen@smartcivic.local',
+]);
+
+export const isDemoCitizenUser = (user?: User | null): boolean => {
+  if (!user) return false;
+  if (user.id === 'USR-CITIZEN-1') return true;
+  const email = (user.email || '').trim().toLowerCase();
+  return DEMO_CITIZEN_EMAILS.has(email);
+};
+
+export const ORDERED_WORKFLOW_TRANSITIONS: Record<string, ComplaintStatus[]> = {
+  Submitted: ['Submitted', 'Under Review', 'Assigned', 'Escalated'],
+  'Under Review': ['Under Review', 'Assigned', 'Work Planned', 'Escalated'],
+  'Pending Verification': ['Pending Verification', 'Under Review', 'Assigned', 'Verified', 'Resolved'],
+  Assigned: ['Assigned', 'Accepted', 'Work Planned', 'In Progress', 'Escalated'],
+  Accepted: ['Accepted', 'Work Planned', 'In Progress', 'Escalated'],
+  'Work Planned': ['Work Planned', 'In Progress', 'Escalated'],
+  'In Progress': ['In Progress', 'Work Completed', 'Resolved', 'Escalated'],
+  'Work Completed': ['Work Completed', 'Resolved', 'Verified', 'In Progress'],
+  Resolved: ['Resolved', 'Verified', 'Closed', 'Reopened'],
+  Verified: ['Verified', 'Closed', 'Reopened'],
+  Closed: ['Closed', 'Reopened'],
+  Reopened: ['Reopened', 'Under Review', 'Assigned', 'Work Planned', 'In Progress'],
+  Escalated: ['Escalated', 'Under Review', 'Assigned', 'Work Planned', 'In Progress', 'Resolved'],
+};
 
 const DEFAULT_GUEST_USER: User = {
   id: 'GUEST-DEFAULT',
@@ -214,17 +292,58 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // 2. Complaints state
   const [complaints, setComplaints] = useState<Complaint[]>(() => {
+    const normalizeComplaintList = (rawList: any[]): Complaint[] => {
+      return (rawList || []).map((c) => ({
+        ...c,
+        timeline: Array.isArray(c?.timeline) && c.timeline.length > 0
+          ? c.timeline
+          : [
+              {
+                id: `TL-INIT-${c?.id || Date.now()}`,
+                status: c?.status || 'Submitted',
+                timestamp: c?.createdAt || new Date().toISOString(),
+                remarks: 'Complaint registered in municipal operations system.',
+                updatedBy: 'Citizen',
+              },
+            ],
+        photos: Array.isArray(c?.photos) ? c.photos : [],
+        location: c?.location || {
+          address: c?.address || 'Site location logged',
+          ward: c?.ward || 'Ward 101 - Anna Nagar',
+          city: 'Chennai',
+          lat: c?.lat || 13.0827,
+          lng: c?.lng || 80.2707,
+        },
+        reportedBy: c?.reportedBy || {
+          id: c?.citizenId || 'USR-CITIZEN-1',
+          name: c?.citizenName || 'Resident',
+          phone: '+91 98401 22334',
+        },
+        citizenId: c?.citizenId || c?.reportedBy?.id || 'USR-CITIZEN-1',
+      }));
+    };
+
     const saved = localStorage.getItem(STORAGE_KEY_COMPLAINTS);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeComplaintList(parsed);
+        }
       } catch (e) {}
     }
-    return INITIAL_COMPLAINTS;
+    return normalizeComplaintList(INITIAL_COMPLAINTS);
   });
 
   // 3. Registered Users Database
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserRecord[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_USERS);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
     return DEMO_USERS.map((u, i) => ({
       ...u,
       createdAt: '2026-01-10T10:00:00.000Z',
@@ -283,6 +402,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return INITIAL_PROJECTS;
   });
 
+  const [officerTasks, setOfficerTasks] = useState<OfficerTask[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_TASKS);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_OFFICER_TASKS;
+  });
+
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [selectedProject, setSelectedProject] = useState<InfrastructureProject | null>(null);
   const [activeToast, setActiveToast] = useState<{ title: string; message: string; type: string } | null>(null);
@@ -303,17 +432,17 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       try {
-        const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const profileDoc = await safeGetDoc(doc(db, 'users', firebaseUser.uid));
         let profile: any;
 
-        if (!profileDoc.exists()) {
+        if (!profileDoc || !profileDoc.exists()) {
           const nowIso = new Date().toISOString();
           const cleanEmail = (firebaseUser.email || '').toLowerCase();
           const matchedDemoRole =
             cleanEmail === DEMO_ACCOUNTS.citizen.email
               ? 'citizen'
               : cleanEmail === DEMO_ACCOUNTS.officer.email
-              ? 'officer'
+              ? 'department_officer'
               : cleanEmail === DEMO_ACCOUNTS.admin.email
               ? 'admin'
               : 'citizen';
@@ -328,6 +457,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           profile = {
             id: firebaseUser.uid,
             uid: firebaseUser.uid,
+            firebaseUid: firebaseUser.uid,
             name: derivedName,
             email: cleanEmail,
             mobile: firebaseUser.phoneNumber || '',
@@ -341,11 +471,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             isOnline: true,
             approvalStatus: 'approved',
           };
-          try {
-            await setDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
-          } catch (e) {
-            console.warn('Initial profile doc write note:', e);
-          }
+          await safeSetDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
         } else {
           profile = { id: profileDoc.id, ...profileDoc.data() };
         }
@@ -525,7 +651,35 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (!snapshot.empty) {
             const list: Complaint[] = [];
             snapshot.forEach((docSnap) => {
-              list.push({ id: docSnap.id, ...docSnap.data() } as Complaint);
+              const data = docSnap.data() as any;
+              list.push({
+                id: docSnap.id,
+                ...data,
+                timeline: Array.isArray(data?.timeline) && data.timeline.length > 0
+                  ? data.timeline
+                  : [
+                      {
+                        id: `TL-INIT-${docSnap.id}`,
+                        status: data?.status || 'Submitted',
+                        timestamp: data?.createdAt || new Date().toISOString(),
+                        remarks: 'Complaint registered in municipal operations system.',
+                        updatedBy: 'Citizen',
+                      },
+                    ],
+                photos: Array.isArray(data?.photos) ? data.photos : [],
+                location: data?.location || {
+                  address: data?.address || 'Site location logged',
+                  ward: data?.ward || 'Ward 101 - Anna Nagar',
+                  city: 'Chennai',
+                  lat: data?.lat || 13.0827,
+                  lng: data?.lng || 80.2707,
+                },
+                reportedBy: data?.reportedBy || {
+                  id: data?.citizenId || 'resident',
+                  name: data?.citizenName || 'Resident',
+                  phone: '+91 98401 22334',
+                },
+              } as Complaint);
             });
             setComplaints(list.sort(
               (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -572,6 +726,119 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return () => unsubscribeProjects();
   }, [isAuthenticated]);
+
+  // Real-time Cloud Firestore sync for Officer Tasks
+  useEffect(() => {
+    if (!isAuthenticated || !auth.currentUser) return;
+    let unsubscribeTasks: () => void = () => {};
+    try {
+      const tasksColRef = collection(db, 'tasks');
+      unsubscribeTasks = onSnapshot(
+        tasksColRef,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: OfficerTask[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push({ id: docSnap.id, ...docSnap.data() } as OfficerTask);
+            });
+            setOfficerTasks(list.sort(
+              (a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+            ));
+          }
+        },
+        (err) => {
+          console.warn('Firestore tasks snapshot skipped:', err.message);
+        }
+      );
+    } catch (e) {}
+    return () => unsubscribeTasks();
+  }, [isAuthenticated]);
+
+  // Save tasks & registered users to localStorage fallback
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(officerTasks));
+  }, [officerTasks]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  // Strict account-wise personal complaint list for the currently authenticated citizen
+  const myComplaints = React.useMemo<Complaint[]>(() => {
+    if (!isAuthenticated || !currentUser || currentUser.id === 'GUEST-DEFAULT') {
+      return [];
+    }
+    const uid = currentUser.id;
+    const fbUid = currentUser.firebaseUid;
+    const isDemoCitizen = isDemoCitizenUser(currentUser);
+
+    return complaints.filter((c) => {
+      if (!c) return false;
+      const ownerId = c.citizenId || c.reportedBy?.id;
+      const reportedId = c.reportedBy?.id;
+      if (ownerId === uid || reportedId === uid) return true;
+      if (fbUid && (ownerId === fbUid || reportedId === fbUid)) return true;
+      if (isDemoCitizen && (ownerId === 'USR-CITIZEN-1' || reportedId === 'USR-CITIZEN-1')) {
+        return true;
+      }
+      return false;
+    });
+  }, [complaints, currentUser, isAuthenticated]);
+
+  const canAccessComplaint = useCallback(
+    (complaint: Complaint): boolean => {
+      if (!complaint) return false;
+      if (isAdminRole(currentUser.role) || isDepartmentOfficerRole(currentUser.role)) {
+        return true;
+      }
+      if (!isAuthenticated || !currentUser || currentUser.id === 'GUEST-DEFAULT') {
+        return false;
+      }
+      const ownerId = complaint.citizenId || complaint.reportedBy?.id;
+      const reportedId = complaint.reportedBy?.id;
+      if (ownerId === currentUser.id || reportedId === currentUser.id) return true;
+      if (
+        currentUser.firebaseUid &&
+        (ownerId === currentUser.firebaseUid || reportedId === currentUser.firebaseUid)
+      ) {
+        return true;
+      }
+      if (
+        isDemoCitizenUser(currentUser) &&
+        (ownerId === 'USR-CITIZEN-1' || reportedId === 'USR-CITIZEN-1')
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [currentUser, isAuthenticated]
+  );
+
+  const canEditProject = useCallback(
+    (project: InfrastructureProject): boolean => {
+      if (!project || !isAuthenticated || !currentUser) return false;
+      if (isAdminRole(currentUser.role)) return true;
+      if (isDepartmentOfficerRole(currentUser.role)) {
+        if (!currentUser.department) return true;
+        return matchesDepartment(currentUser.department, project.department);
+      }
+      return false;
+    },
+    [currentUser, isAuthenticated]
+  );
+
+  const getAllowedNextStatuses = useCallback((currentStatus: ComplaintStatus): ComplaintStatus[] => {
+    return ORDERED_WORKFLOW_TRANSITIONS[currentStatus] || [
+      currentStatus,
+      'Under Review',
+      'Assigned',
+      'Work Planned',
+      'In Progress',
+      'Resolved',
+      'Verified',
+      'Closed',
+    ];
+  }, []);
 
   // Sync user record to Firestore helper (only for own user document)
   const syncUserToFirestore = async (userRecord: RegisteredUserRecord) => {
@@ -629,6 +896,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const newUser: RegisteredUserRecord = {
         id: firebaseUid,
+        uid: firebaseUid,
         firebaseUid,
         name: profile.name.trim(),
         email: cleanEmail,
@@ -648,29 +916,27 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         submittedComplaintsCount: 0,
       };
 
-      try {
-        await setDoc(
-          doc(db, 'users', firebaseUid),
-          {
-            uid: firebaseUid,
-            id: firebaseUid,
-            name: newUser.name,
-            email: newUser.email,
-            mobile: newUser.phone,
-            phone: newUser.phone,
-            ward: newUser.ward,
-            role: 'citizen',
-            status: 'active',
-            createdAt: nowIso,
-            lastLoginAt: nowIso,
-            loginCount: 1,
-          },
-          { merge: true }
-        );
-      } catch (firestoreErr: any) {
-        handleFirestoreError(firestoreErr, OperationType.WRITE, `users/${firebaseUid}`);
-      }
+      await safeSetDoc(
+        doc(db, 'users', firebaseUid),
+        {
+          id: firebaseUid,
+          uid: firebaseUid,
+          firebaseUid,
+          name: newUser.name,
+          email: newUser.email,
+          mobile: newUser.phone,
+          phone: newUser.phone,
+          ward: newUser.ward,
+          role: 'citizen',
+          status: 'active',
+          createdAt: nowIso,
+          lastLoginAt: nowIso,
+          loginCount: 1,
+        },
+        { merge: true }
+      );
 
+      setSelectedComplaint(null);
       setCurrentUser(newUser);
       setIsAuthenticated(true);
       setRegisteredUsers((prev) => {
@@ -693,12 +959,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const effectivePass = normalizePassword(cleanEmail, pass);
           const signInCred = await signInWithEmailAndPassword(auth, cleanEmail, effectivePass);
           const firebaseUid = signInCred.user.uid;
-          let profileDoc: any;
-          try {
-            profileDoc = await getDoc(doc(db, 'users', firebaseUid));
-          } catch (fsErr: any) {
-            handleFirestoreError(fsErr, OperationType.GET, `users/${firebaseUid}`);
-          }
+          const profileDoc = await safeGetDoc(doc(db, 'users', firebaseUid));
 
           let existingUser: RegisteredUserRecord;
           const nowIso = new Date().toISOString();
@@ -745,30 +1006,27 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               isOnline: true,
               submittedComplaintsCount: 0,
             };
-            try {
-              await setDoc(
-                doc(db, 'users', firebaseUid),
-                {
-                  uid: firebaseUid,
-                  id: firebaseUid,
-                  name: existingUser.name,
-                  email: existingUser.email,
-                  mobile: existingUser.phone,
-                  phone: existingUser.phone,
-                  ward: existingUser.ward,
-                  role: 'citizen',
-                  status: 'active',
-                  createdAt: nowIso,
-                  lastLoginAt: nowIso,
-                  loginCount: 1,
-                },
-                { merge: true }
-              );
-            } catch (fsWriteErr: any) {
-              handleFirestoreError(fsWriteErr, OperationType.WRITE, `users/${firebaseUid}`);
-            }
+            await safeSetDoc(
+              doc(db, 'users', firebaseUid),
+              {
+                uid: firebaseUid,
+                id: firebaseUid,
+                name: existingUser.name,
+                email: existingUser.email,
+                mobile: existingUser.phone,
+                phone: existingUser.phone,
+                ward: existingUser.ward,
+                role: 'citizen',
+                status: 'active',
+                createdAt: nowIso,
+                lastLoginAt: nowIso,
+                loginCount: 1,
+              },
+              { merge: true }
+            );
           }
 
+          setSelectedComplaint(null);
           setCurrentUser(existingUser);
           setIsAuthenticated(true);
           showToast('Account Found', `Welcome back, ${existingUser.name}! Signed in to your Citizen account.`, 'success');
@@ -788,6 +1046,37 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : err?.code === 'auth/password-does-not-meet-requirements'
             ? 'Password does not meet requirements. Please ensure it has at least 6 characters and an uppercase letter.'
             : err?.message || 'Could not register user account.';
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Send Password Reset Email using Firebase Authentication
+  const resetPassword = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      const errMsg = 'Please enter your email address first.';
+      setAuthError(errMsg);
+      throw new Error(errMsg);
+    }
+    setIsAuthLoading(true);
+    setAuthError(null);
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+      showToast('Password Reset Email Sent', `Instructions sent to ${cleanEmail}. Please check your inbox.`, 'success');
+    } catch (err: any) {
+      let message = 'Failed to send password reset email.';
+      if (err?.code === 'auth/invalid-email') {
+        message = 'Invalid email address format.';
+      } else if (err?.code === 'auth/user-not-found') {
+        message = 'No account found with this email address.';
+      } else if (err?.code === 'auth/too-many-requests') {
+        message = 'Too many reset requests. Please try again later.';
+      } else if (err?.message) {
+        message = err.message;
+      }
       setAuthError(message);
       throw new Error(message);
     } finally {
@@ -820,8 +1109,8 @@ const DEMO_PRESET_USERS: Record<
     ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
   },
   'officer@smartcivic.test': {
-    role: 'officer',
-    name: 'Field Officer',
+    role: 'department_officer',
+    name: 'Department Zonal Officer',
     department: 'Public Works Department (PWD)',
     designation: 'Senior Municipal Engineer / Ward Officer',
     employeeId: 'SC-OFF-204',
@@ -844,8 +1133,8 @@ const DEMO_PRESET_USERS: Record<
     ward: 'Ward 101 - Anna Nagar 2nd Avenue & Roundtana',
   },
   'officer@civic': {
-    role: 'officer',
-    name: 'Field Officer',
+    role: 'department_officer',
+    name: 'Department Zonal Officer',
     department: 'Public Works Department (PWD)',
     designation: 'Senior Municipal Engineer / Ward Officer',
     employeeId: 'SC-OFF-204',
@@ -957,13 +1246,14 @@ const DEMO_PRESET_USERS: Record<
             loginCount: 1,
             isOnline: true,
           };
-          await setDoc(doc(db, 'users', cred.user.uid), demoProfile, { merge: true });
+          await safeSetDoc(doc(db, 'users', cred.user.uid), demoProfile, { merge: true });
         } catch (createErr: any) {
           if (createErr?.code === 'auth/email-already-in-use') {
+            const isOfficerDemo = demoConfig.role === 'officer' || demoConfig.role === 'department_officer';
             const fallbackPasswords = [
-              demoConfig.role === 'citizen' ? 'City@123' : demoConfig.role === 'officer' ? 'Officer@123' : 'Admin@123',
-              demoConfig.role === 'citizen' ? 'city@123' : demoConfig.role === 'officer' ? 'officer@123' : 'admin@123',
-              demoConfig.role === 'citizen' ? 'Citizen@12345' : demoConfig.role === 'officer' ? 'Officer@12345' : 'Admin@12345',
+              demoConfig.role === 'citizen' ? 'City@123' : isOfficerDemo ? 'Officer@123' : 'Admin@123',
+              demoConfig.role === 'citizen' ? 'city@123' : isOfficerDemo ? 'officer@123' : 'admin@123',
+              demoConfig.role === 'citizen' ? 'Citizen@12345' : isOfficerDemo ? 'Officer@12345' : 'Admin@12345',
               'smartcivic2026',
             ];
             for (const fbPass of fallbackPasswords) {
@@ -1006,14 +1296,9 @@ const DEMO_PRESET_USERS: Record<
     // PHASE 2: FIRESTORE USER PROFILE RETRIEVAL
     // ─────────────────────────────────────────────────────────────
     const firebaseUid = cred.user.uid;
-    let profileDoc: any;
-    try {
-      profileDoc = await getDoc(doc(db, 'users', firebaseUid));
-    } catch (fsErr: any) {
-      handleFirestoreError(fsErr, OperationType.GET, `users/${firebaseUid}`);
-    }
+    let profileDoc: any = await safeGetDoc(doc(db, 'users', firebaseUid));
 
-    if (!profileDoc.exists()) {
+    if (!profileDoc || !profileDoc.exists()) {
       // Check if this is a known demo account that needs initial profile creation
       const demoConfig = DEMO_PRESET_USERS[cleanIdentifier];
       if (demoConfig) {
@@ -1037,12 +1322,8 @@ const DEMO_PRESET_USERS: Record<
           loginCount: 1,
           isOnline: true,
         };
-        try {
-          await setDoc(doc(db, 'users', firebaseUid), demoProfile, { merge: true });
-          profileDoc = { exists: () => true, id: firebaseUid, data: () => demoProfile };
-        } catch (bootstrapErr: any) {
-          handleFirestoreError(bootstrapErr, OperationType.WRITE, `users/${firebaseUid}`);
-        }
+        await safeSetDoc(doc(db, 'users', firebaseUid), demoProfile, { merge: true });
+        profileDoc = { exists: () => true, id: firebaseUid, data: () => demoProfile };
       } else {
         const nowIso = new Date().toISOString();
         const rawPrefix = cleanIdentifier.split('@')[0];
@@ -1063,12 +1344,8 @@ const DEMO_PRESET_USERS: Record<
           loginCount: 1,
           isOnline: true,
         };
-        try {
-          await setDoc(doc(db, 'users', firebaseUid), autoProfile, { merge: true });
-          profileDoc = { exists: () => true, id: firebaseUid, data: () => autoProfile };
-        } catch (autoErr: any) {
-          handleFirestoreError(autoErr, OperationType.WRITE, `users/${firebaseUid}`);
-        }
+        await safeSetDoc(doc(db, 'users', firebaseUid), autoProfile, { merge: true });
+        profileDoc = { exists: () => true, id: firebaseUid, data: () => autoProfile };
       }
     }
 
@@ -1119,6 +1396,7 @@ const DEMO_PRESET_USERS: Record<
       isOnline: true,
     };
 
+    setSelectedComplaint(null);
     setCurrentUser(safeUser);
     setIsAuthenticated(true);
     setIsAuthLoading(false);
@@ -1134,21 +1412,12 @@ const DEMO_PRESET_USERS: Record<
       const result = await signInWithPopup(auth, googleProvider);
       const firebaseUser = result.user;
 
-      let profileDoc: any;
-      try {
-        profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      } catch (fsErr: any) {
-        console.error('[FIRESTORE ERROR] Google sign-in getDoc failed:', fsErr?.code, fsErr?.message);
-        const fsMessage = 'Authentication succeeded, but Smart Civic could not access your user profile because of Firestore permissions.';
-        setAuthError(fsMessage);
-        setIsAuthLoading(false);
-        throw new Error(fsMessage);
-      }
+      const profileDoc = await safeGetDoc(doc(db, 'users', firebaseUser.uid));
 
       let safeUser: User;
       let profile: any;
 
-      if (!profileDoc.exists()) {
+      if (!profileDoc || !profileDoc.exists()) {
         const nowIso = new Date().toISOString();
         profile = {
           id: firebaseUser.uid,
@@ -1168,15 +1437,7 @@ const DEMO_PRESET_USERS: Record<
           isOnline: true,
           submittedComplaintsCount: 0,
         };
-        try {
-          await setDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
-        } catch (setErr: any) {
-          console.error('[FIRESTORE ERROR] Google sign-in setDoc failed:', setErr?.code, setErr?.message);
-          const fsMsg = 'Authentication succeeded, but Smart Civic could not access your user profile because of Firestore permissions.';
-          setAuthError(fsMsg);
-          setIsAuthLoading(false);
-          throw new Error(fsMsg);
-        }
+        await safeSetDoc(doc(db, 'users', firebaseUser.uid), profile, { merge: true });
         safeUser = profile;
       } else {
         profile = profileDoc.data();
@@ -1246,6 +1507,7 @@ const DEMO_PRESET_USERS: Record<
       console.warn('Sign out warning:', e);
     }
 
+    setSelectedComplaint(null);
     setCurrentUser(DEFAULT_GUEST_USER);
     setIsAuthenticated(false);
     setAuthError(null);
@@ -1258,22 +1520,32 @@ const DEMO_PRESET_USERS: Record<
     await signInWithEmail(config.email, config.password);
   };
 
-  // Create complaint action with Location-Aware Auto-Assignment
+  // Create complaint action with Location-Aware Auto-Assignment & Collision-Resistant SCP-2026-XXXXXX ID
   const createComplaint = async (data: {
     title: string;
     description: string;
     category: any;
+    subcategory?: string;
     severity: Severity;
+    department?: MunicipalDepartment;
+    district?: string;
+    city?: string;
+    zone?: string;
     address: string;
     landmark?: string;
     ward: string;
     lat: number;
     lng: number;
     photos: string[];
+    supportingDocName?: string;
+    declarationAccepted?: boolean;
     aiResult?: AIClassificationResult;
     verificationResult?: AIVerificationResult;
     photoAnalysis?: PhotoAuthenticityAnalysis;
   }): Promise<Complaint> => {
+    const cleanPhotos = Array.isArray(data.photos) ? data.photos.filter(Boolean) : [];
+    const hasUploadedPhotos = cleanPhotos.length > 0;
+
     let ai = data.aiResult;
     const vr = data.verificationResult;
     if (!ai) {
@@ -1284,27 +1556,42 @@ const DEMO_PRESET_USERS: Record<
         address: data.address,
         landmark: data.landmark,
         ward: data.ward,
-        hasImage: data.photos.length > 0,
+        hasImage: hasUploadedPhotos,
       });
     }
 
-    let maxSeq = 0;
+    // Collision-resistant Unique Complaint ID (SCP-2026-XXXXXX)
+    let maxSeq = 104200;
+    const existingIds = new Set<string>();
     complaints.forEach((c) => {
-      const match = c.id?.match(/^SC-2026-(\d+)$/);
+      if (c.id) existingIds.add(c.id);
+      const match = c.id?.match(/^(?:SCP|SC)-2026-(\d+)$/);
       if (match) {
         const num = parseInt(match[1], 10);
         if (num > maxSeq) maxSeq = num;
       }
     });
-    const nextSeq = Math.max(maxSeq + 1, complaints.length + 1);
-    const complaintId = `SC-2026-${String(nextSeq).padStart(6, '0')}`;
+    let nextSeq = maxSeq + 1;
+    let complaintId = `SCP-2026-${String(nextSeq).padStart(6, '0')}`;
+    while (existingIds.has(complaintId)) {
+      nextSeq += 1;
+      complaintId = `SCP-2026-${String(nextSeq).padStart(6, '0')}`;
+    }
+
     const nowIso = new Date().toISOString();
     const slaHours =
       ai?.estimatedResolutionHours ||
       (data.severity === 'Critical' ? 12 : data.severity === 'High' ? 24 : 48);
+    const responseHours =
+      data.severity === 'Critical' ? 2 : data.severity === 'High' ? 4 : 12;
+    const targetResponseDate = new Date(Date.now() + responseHours * 3600 * 1000).toISOString();
     const slaDeadline = new Date(Date.now() + slaHours * 3600 * 1000).toISOString();
 
-    const targetDept = (vr?.recommended_department as MunicipalDepartment) || ai?.suggestedDepartment || 'Public Works Department (PWD)';
+    const targetDept: MunicipalDepartment =
+      data.department ||
+      (vr?.recommended_department as MunicipalDepartment) ||
+      ai?.suggestedDepartment ||
+      'Public Works Department (PWD)';
 
     // Multi-factor auto-assignment: Score and find best field officer/worker
     const getDepartmentSkills = (dept: MunicipalDepartment): ComplaintCategory[] => {
@@ -1335,8 +1622,8 @@ const DEMO_PRESET_USERS: Record<
       phone: fo.phone,
       department: fo.department,
       ward: fo.ward,
-      lat: fo.lat || 18.1142,
-      lng: fo.lng || 83.3995,
+      lat: fo.lat || 13.0827,
+      lng: fo.lng || 80.2707,
       activeTasksCount: fo.activeTasksCount || 1,
       isAvailable: fo.isAvailable !== false,
       skills: getDepartmentSkills(fo.department),
@@ -1363,23 +1650,61 @@ const DEMO_PRESET_USERS: Record<
         }
       : undefined;
 
+    const initialTimeline: StatusHistoryItem[] = [
+      {
+        id: `TL-${Date.now()}-1`,
+        status: 'Submitted',
+        timestamp: nowIso,
+        updatedBy: `${currentUser.name} (Citizen)`,
+        role: 'citizen',
+        remarks: `Grievance submitted by citizen via Smart Civic Web Portal.${
+          hasUploadedPhotos ? ` Attached ${cleanPhotos.length} supporting photo(s).` : ' No photographic attachment provided.'
+        }`,
+      },
+      {
+        id: `TL-${Date.now()}-2`,
+        status: 'Verified',
+        timestamp: new Date(Date.now() + 1000).toISOString(),
+        updatedBy: 'Smart Civic Grievance Registry',
+        role: 'admin',
+        remarks: `Formal Acknowledgement ID ${complaintId} generated and routed to ${targetDept}. Target response SLA: ${responseHours} hours.`,
+      },
+    ];
+
+    if (assignedOfficer && bestMatch) {
+      initialTimeline.push({
+        id: `TL-${Date.now()}-3`,
+        status: 'Assigned',
+        timestamp: new Date(Date.now() + 2000).toISOString(),
+        updatedBy: 'Department Routing System',
+        role: 'department_officer',
+        remarks: `Assigned to Field Officer ${assignedOfficer.name} (${assignedOfficer.badgeNumber}) under ${targetDept} (${bestMatch.distanceKm} km from site).`,
+      });
+    }
+
     const newComplaint: Complaint = {
       id: complaintId,
       title: data.title,
       description: data.description,
       category: ai?.category || data.category,
-      subcategory: ai?.subcategory,
+      subcategory: data.subcategory || ai?.subcategory || 'General Civic Grievance',
       severity: ai?.severity || data.severity,
       priority: ai?.priority || (data.severity === 'Critical' ? 'P1-Critical' : 'P2-High'),
       status: assignedOfficer ? 'Assigned' : 'Submitted',
+      district: data.district || 'Chennai',
+      supportingDocName: data.supportingDocName,
+      submissionChannel: 'Web Portal',
+      declarationAccepted: data.declarationAccepted !== false,
       location: {
         address: data.address,
         landmark: data.landmark,
         ward: data.ward,
+        city: data.city || data.district || 'Chennai',
+        zone: data.zone,
         lat: data.lat,
         lng: data.lng,
       },
-      photos: data.photos,
+      photos: cleanPhotos,
       reportedBy: {
         id: auth.currentUser?.uid || currentUser.id,
         name: currentUser.name,
@@ -1391,36 +1716,19 @@ const DEMO_PRESET_USERS: Record<
       assignedOfficer,
       slaHours,
       slaDeadline,
+      targetResponseDate,
       isOverdue: false,
       isEscalated: false,
       createdAt: nowIso,
       updatedAt: nowIso,
       upvotes: 1,
       upvotedBy: [currentUser.id],
-      timeline: [
-        {
-          id: `TL-${Date.now()}-1`,
-          status: 'Submitted',
-          timestamp: nowIso,
-          updatedBy: `${currentUser.name} (Citizen)`,
-          role: 'citizen',
-          remarks: 'Citizen registered complaint with GPS coordinates and photographic evidence.',
-        },
-        {
-          id: `TL-${Date.now()}-2`,
-          status: 'Verified',
-          timestamp: new Date(Date.now() + 1000).toISOString(),
-          updatedBy: 'Smart Civic AI Assistant',
-          role: 'admin',
-          remarks: `AI auto-classified issue under ${targetDept} with ${ai?.confidence}% confidence. Safety Risk: ${ai?.safetyRisk}`,
-        },
-      ],
+      timeline: initialTimeline,
       aiAnalysis: ai,
-      // AI Verification and Smart Routing Fields (Section 17)
       aiValidity: vr?.validity || 'VALID',
       aiConfidence: vr?.confidence || ai?.confidence || 95,
       aiCategory: vr?.category || ai?.category || data.category,
-      aiSubcategory: vr?.subcategory || ai?.subcategory || 'General Civic Issue',
+      aiSubcategory: data.subcategory || vr?.subcategory || ai?.subcategory || 'General Civic Issue',
       aiPriority: vr?.priority || (data.severity === 'Critical' ? 'CRITICAL' : 'HIGH'),
       aiLocation: vr?.location || data.address || '',
       aiLocationStatus: vr?.location_status || 'PROVIDED',
@@ -1430,19 +1738,10 @@ const DEMO_PRESET_USERS: Record<
       duplicateStatus: vr?.duplicate || false,
       aiVerifiedAt: nowIso,
       aiVerification: vr,
-      photoAnalysis: data.photoAnalysis,
+      // Only store photoAnalysis if photos were actually uploaded
+      photoAnalysis: hasUploadedPhotos ? data.photoAnalysis : undefined,
+      appeals: [],
     };
-
-    if (assignedOfficer && bestMatch) {
-      newComplaint.timeline.push({
-        id: `TL-${Date.now()}-3`,
-        status: 'Assigned',
-        timestamp: new Date(Date.now() + 2000).toISOString(),
-        updatedBy: 'System Auto-Assignment',
-        role: 'admin',
-        remarks: `Auto-assigned to ${assignedOfficer.name} based on multi-factor score (${bestMatch.totalScore}/100, ${bestMatch.distanceKm} km distance).`,
-      });
-    }
 
     try {
       await setDoc(doc(db, 'complaints', complaintId), newComplaint);
@@ -1457,15 +1756,15 @@ const DEMO_PRESET_USERS: Record<
       user: currentUser.name,
       role: currentUser.role,
       action: 'COMPLAINT_CREATED',
-      details: `Complaint ${complaintId} created in ${data.ward}. Assigned to: ${assignedOfficer?.name || 'Pending'}.`,
+      details: `Complaint ${complaintId} created in ${data.ward} (${data.district || 'Chennai'}). Assigned to: ${assignedOfficer?.name || 'Pending'}.`,
     });
 
     // Notify assigned worker or admin
     const newNotif: CivicNotification = {
       id: `NOTIF-${Date.now()}`,
       complaintId: newComplaint.id,
-      title: `New Report: ${newComplaint.title.slice(0, 30)}...`,
-      message: `A new ${newComplaint.category} issue logged in ${newComplaint.location.ward}.`,
+      title: `New Grievance: ${newComplaint.id}`,
+      message: `${newComplaint.category} issue registered in ${newComplaint.location.ward}: "${newComplaint.title.slice(0, 40)}"`,
       type: 'new_complaint',
       timestamp: nowIso,
       read: false,
@@ -1474,8 +1773,8 @@ const DEMO_PRESET_USERS: Record<
     setNotifications((prev) => [newNotif, ...prev]);
 
     showToast(
-      'Complaint Filed & Assigned',
-      `Registered ${complaintId}. ${assignedOfficer ? `Auto-assigned to ${assignedOfficer.name}.` : 'Pending review.'}`,
+      'Grievance Registered & Acknowledged',
+      `Complaint ID ${complaintId} generated. ${assignedOfficer ? `Assigned to ${assignedOfficer.name}.` : 'Routed to department.'}`,
       'success'
     );
 
@@ -1525,6 +1824,15 @@ const DEMO_PRESET_USERS: Record<
     const target = infrastructureProjects.find((p) => p.id === projectId);
     if (!target) return null;
 
+    if (!canEditProject(target)) {
+      showToast(
+        'Access Restricted',
+        `You can only update infrastructure projects assigned to your department (${currentUser.department || 'Unassigned'}).`,
+        'warning'
+      );
+      return null;
+    }
+
     const nowIso = new Date().toISOString();
     const updated: InfrastructureProject = {
       ...target,
@@ -1555,7 +1863,183 @@ const DEMO_PRESET_USERS: Record<
     return updated;
   };
 
-  // Update status
+  const deleteInfrastructureProject = async (projectId: string): Promise<void> => {
+    if (!isAdminRole(currentUser.role)) {
+      showToast('Admin Only', 'Only Municipal Administrators can delete infrastructure projects.', 'warning');
+      return;
+    }
+    const target = infrastructureProjects.find((p) => p.id === projectId);
+    if (target) {
+      const linkedActive = complaints.filter(
+        (c) =>
+          c.status !== 'Resolved' &&
+          c.status !== 'Verified' &&
+          c.status !== 'Closed' &&
+          c.department === target.department &&
+          c.location?.ward === target.ward
+      );
+      if (linkedActive.length > 0) {
+        showToast(
+          'Deletion Blocked: Active Complaints',
+          `Cannot delete ${projectId} while ${linkedActive.length} active complaint(s) are linked to ${target.ward} (${target.department}). Resolve or reassign them first.`,
+          'warning'
+        );
+        return;
+      }
+    }
+    try {
+      await deleteDoc(doc(db, 'infrastructure_projects', projectId));
+    } catch (err: any) {
+      console.warn('Delete project note:', err);
+    }
+    setInfrastructureProjects((prev) => prev.filter((p) => p.id !== projectId));
+    if (selectedProject?.id === projectId) setSelectedProject(null);
+    showToast('Project Removed', `Project ${projectId} has been deleted.`, 'info');
+    addAuditLog({
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'INFRASTRUCTURE_PROJECT_DELETED',
+      details: `Deleted project ${projectId}`,
+    });
+  };
+
+  const deleteComplaint = async (complaintId: string): Promise<void> => {
+    if (!isAdminRole(currentUser.role)) {
+      showToast('Admin Only', 'Only Administrators can delete complaint records.', 'warning');
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'complaints', complaintId));
+    } catch (err: any) {
+      console.warn('Delete complaint note:', err);
+    }
+    setComplaints((prev) => prev.filter((c) => c.id !== complaintId));
+    if (selectedComplaint?.id === complaintId) setSelectedComplaint(null);
+    showToast('Complaint Deleted', `Complaint ${complaintId} removed from registry.`, 'info');
+    addAuditLog({
+      complaintId,
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'COMPLAINT_DELETED',
+      details: `Administrator deleted complaint ${complaintId}.`,
+    });
+  };
+
+  const createOfficerTask = async (data: Omit<OfficerTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<OfficerTask> => {
+    const id = `TSK-${Date.now().toString().slice(-6)}`;
+    const nowIso = new Date().toISOString();
+    const newTask: OfficerTask = {
+      ...data,
+      id,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+    try {
+      await setDoc(doc(db, 'tasks', id), newTask, { merge: true });
+    } catch (err: any) {
+      console.warn('Task create Firestore note:', err);
+    }
+    setOfficerTasks((prev) => [newTask, ...prev.filter((t) => t.id !== id)]);
+    showToast('Officer Task Created', `Task ${id} assigned to ${newTask.assignedOfficer}.`, 'success');
+    addAuditLog({
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'TASK_CREATED',
+      details: `Created task ${id}: ${newTask.title}`,
+    });
+    return newTask;
+  };
+
+  const updateOfficerTask = async (taskId: string, updates: Partial<OfficerTask>): Promise<void> => {
+    const nowIso = new Date().toISOString();
+    const payload = {
+      ...updates,
+      updatedAt: nowIso,
+    };
+    try {
+      await updateDoc(doc(db, 'tasks', taskId), payload);
+    } catch (err: any) {
+      console.warn('Task update Firestore note:', err);
+    }
+    setOfficerTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, ...payload } : t))
+    );
+    showToast('Task Updated', `Task ${taskId} status updated to ${updates.status || 'updated'}.`, 'success');
+    addAuditLog({
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'TASK_UPDATED',
+      details: `Updated task ${taskId} (${updates.status || 'progress updated'})`,
+    });
+  };
+
+  const updateComplaintOperationalFields = async (
+    complaintId: string,
+    fields: Partial<Complaint> & { remarks?: string }
+  ): Promise<void> => {
+    const target = complaints.find((c) => c.id === complaintId);
+    if (!target) return;
+
+    const nowIso = new Date().toISOString();
+    const newStatus = fields.status || target.status;
+
+    if (newStatus !== target.status && !isAdminRole(currentUser.role)) {
+      const allowed = getAllowedNextStatuses(target.status);
+      if (!allowed.includes(newStatus)) {
+        showToast(
+          'Ordered Workflow Enforced',
+          `Cannot jump directly from "${target.status}" to "${newStatus}". Allowed next stages: ${allowed.filter((s) => s !== target.status).join(' → ')}.`,
+          'warning'
+        );
+        return;
+      }
+    }
+
+    const newTimelineItem: StatusHistoryItem = {
+      id: `HST-${Date.now()}`,
+      status: newStatus,
+      timestamp: nowIso,
+      updatedBy: `${currentUser.name || 'Municipal Officer'} (${currentUser.employeeId || currentUser.id})`,
+      role: currentUser.role,
+      remarks: fields.remarks || `Operational update to ${newStatus}`,
+    };
+
+    const updatedTimeline = [newTimelineItem, ...(target.timeline || [])];
+
+    const updatePayload: any = {
+      ...fields,
+      status: newStatus,
+      timeline: updatedTimeline,
+      updatedAt: nowIso,
+    };
+
+    const remarksText = fields.remarks;
+    delete updatePayload.remarks;
+
+    try {
+      await updateDoc(doc(db, 'complaints', complaintId), updatePayload);
+    } catch (err: any) {
+      console.warn('Complaint operational update note:', err);
+    }
+
+    setComplaints((prev) =>
+      prev.map((c) => (c.id === complaintId ? { ...c, ...updatePayload } : c))
+    );
+
+    if (selectedComplaint?.id === complaintId) {
+      setSelectedComplaint({ ...selectedComplaint, ...updatePayload });
+    }
+
+    showToast('Grievance Updated', `Complaint ${complaintId} updated to ${newStatus}.`, 'success');
+    addAuditLog({
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'COMPLAINT_UPDATED',
+      details: `Updated complaint ${complaintId} status to ${newStatus}. Remarks: ${remarksText || 'None'}`,
+    });
+  };
+
+  // Update status with ordered workflow enforcement
   const updateComplaintStatus = async (
     complaintId: string,
     newStatus: ComplaintStatus,
@@ -1565,6 +2049,18 @@ const DEMO_PRESET_USERS: Record<
     const nowIso = new Date().toISOString();
     const target = complaints.find((c) => c.id === complaintId);
     if (!target) return;
+
+    if (newStatus !== target.status && !isAdminRole(currentUser.role)) {
+      const allowed = getAllowedNextStatuses(target.status);
+      if (!allowed.includes(newStatus)) {
+        showToast(
+          'Ordered Workflow Enforced',
+          `Cannot jump directly from "${target.status}" to "${newStatus}". Allowed next stages: ${allowed.filter((s) => s !== target.status).join(' → ')}.`,
+          'warning'
+        );
+        return;
+      }
+    }
 
     const newTimelineItem = {
       id: `TL-${Date.now()}`,
@@ -1592,11 +2088,25 @@ const DEMO_PRESET_USERS: Record<
       };
     }
 
+    if (newStatus === 'Verified') {
+      updated.officialVerification = {
+        status: 'approved',
+        verifiedBy: `${currentUser.name} (${getRoleDisplayName(currentUser.role)})`,
+        verifiedAt: nowIso,
+        remarks: remarks || 'Field work officially verified by Department Officer.',
+        slaComplianceMet: !target.isOverdue,
+        qualityScore: 95,
+      };
+    }
+
     try {
       await setDoc(doc(db, 'complaints', complaintId), updated, { merge: true });
     } catch (e) {}
 
     setComplaints((prev) => prev.map((c) => (c.id === complaintId ? updated : c)));
+    if (selectedComplaint?.id === complaintId) {
+      setSelectedComplaint(updated);
+    }
 
     addAuditLog({
       complaintId,
@@ -2052,6 +2562,38 @@ const DEMO_PRESET_USERS: Record<
     } catch (e) {}
   };
 
+  // Toggle Officer Duty Status (ON DUTY / OFF DUTY)
+  const toggleDutyStatus = async () => {
+    const newDutyStatus = currentUser.dutyStatus === 'OFF_DUTY' ? 'ON_DUTY' : 'OFF_DUTY';
+
+    setCurrentUser((prev) => ({ ...prev, dutyStatus: newDutyStatus }));
+
+    setRegisteredUsers((prev) =>
+      prev.map((u) => (u.id === currentUser.id || u.uid === currentUser.id ? { ...u, dutyStatus: newDutyStatus } : u))
+    );
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'users', auth.currentUser.uid), { dutyStatus: newDutyStatus }, { merge: true });
+      } catch (err) {
+        console.warn('Duty status Firestore sync note:', err);
+      }
+    }
+
+    addAuditLog({
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'DUTY_STATUS_CHANGED',
+      details: `Officer duty status changed to ${newDutyStatus}.`,
+    });
+
+    showToast(
+      'Duty Status Updated',
+      `You are now ${newDutyStatus === 'ON_DUTY' ? 'ON DUTY (Active & Available for Dispatch)' : 'OFF DUTY (Unavailable)'}`,
+      'info'
+    );
+  };
+
   // Priority Update
   const updatePriority = async (complaintId: string, priority: Priority) => {
     const nowIso = new Date().toISOString();
@@ -2143,19 +2685,40 @@ const DEMO_PRESET_USERS: Record<
     );
   };
 
-  // Reopen complaint: if citizen indicates "No, Still an Issue"
-  const reopenComplaint = async (complaintId: string, reason: string) => {
+  // Reopen / Appeal complaint: Citizen submits formal appeal on Resolved/Closed grievance
+  const reopenComplaint = async (
+    complaintId: string,
+    reason: string,
+    additionalDescription?: string,
+    photoUrl?: string
+  ) => {
     const nowIso = new Date().toISOString();
     const target = complaints.find((c) => c.id === complaintId);
     if (!target) return;
 
-    const timelineItem = {
+    const newAppeal: AppealRecord = {
+      id: `APL-${Date.now().toString().slice(-6)}`,
+      complaintId,
+      reason,
+      additionalDescription: additionalDescription || '',
+      photoUrl,
+      submittedAt: nowIso,
+      submittedBy: currentUser.name,
+      status: 'Reopened',
+    };
+
+    const fullRemarks = additionalDescription
+      ? `Citizen filed Appeal (${newAppeal.id}) — Reason: "${reason}". Details: "${additionalDescription}". Grievance reopened and escalated for supervisory review.`
+      : `Citizen filed Appeal (${newAppeal.id}) — Reason: "${reason}". Grievance reopened and escalated for supervisory review.`;
+
+    const timelineItem: StatusHistoryItem = {
       id: `TL-${Date.now()}`,
       status: 'Reopened' as ComplaintStatus,
       timestamp: nowIso,
       updatedBy: `${currentUser.name} (Citizen)`,
       role: 'citizen' as UserRole,
-      remarks: `Citizen flagged incomplete resolution: "${reason}". Escalated to higher official.`,
+      remarks: fullRemarks,
+      evidenceUrl: photoUrl,
     };
 
     const updated: Complaint = {
@@ -2163,10 +2726,14 @@ const DEMO_PRESET_USERS: Record<
       status: 'Reopened',
       isEscalated: true,
       updatedAt: nowIso,
-      timeline: [...target.timeline, timelineItem],
+      appeals: [newAppeal, ...(target.appeals || [])],
+      timeline: [...(target.timeline || []), timelineItem],
     };
 
     setComplaints((prev) => prev.map((c) => (c.id === complaintId ? updated : c)));
+    if (selectedComplaint?.id === complaintId) {
+      setSelectedComplaint(updated);
+    }
 
     try {
       await setDoc(doc(db, 'complaints', complaintId), updated, { merge: true });
@@ -2176,15 +2743,15 @@ const DEMO_PRESET_USERS: Record<
       complaintId,
       user: currentUser.name,
       role: 'citizen',
-      action: 'COMPLAINT_REOPENED',
-      details: `Citizen reopened issue: "${reason}". Flagged for official inquiry.`,
+      action: 'COMPLAINT_APPEALED_REOPENED',
+      details: `Citizen filed appeal ${newAppeal.id} ("${reason}"). Grievance reopened for supervisory verification.`,
     });
 
     const notif: CivicNotification = {
       id: `NOTIF-${Date.now()}`,
       complaintId,
-      title: `⚠️ Complaint Reopened: ${complaintId}`,
-      message: `Citizen marked issue as unresolved: "${reason.slice(0, 50)}..."`,
+      title: `Appeal & Reopen: ${complaintId}`,
+      message: `Citizen appealed resolution (${reason}): "${(additionalDescription || reason).slice(0, 60)}"`,
       type: 'reopened',
       timestamp: nowIso,
       read: false,
@@ -2192,7 +2759,76 @@ const DEMO_PRESET_USERS: Record<
     };
     setNotifications((prev) => [notif, ...prev]);
 
-    showToast('Issue Reopened', 'Escalation sent to Municipal Executive Engineer.', 'warning');
+    showToast(
+      'Appeal Submitted & Complaint Reopened',
+      `Appeal ${newAppeal.id} recorded. Grievance ${complaintId} has been reopened for officer review.`,
+      'warning'
+    );
+  };
+
+  // Department Officer / Admin: Review Citizen Appeal
+  const reviewAppeal = async (
+    complaintId: string,
+    appealId: string,
+    decision: 'Accepted' | 'Rejected',
+    reviewRemarks: string
+  ) => {
+    const nowIso = new Date().toISOString();
+    const target = complaints.find((c) => c.id === complaintId);
+    if (!target) return;
+
+    const updatedAppeals = (target.appeals || []).map((a) =>
+      a.id === appealId
+        ? {
+            ...a,
+            status: decision === 'Accepted' ? ('Accepted' as const) : ('Rejected' as const),
+            reviewedBy: `${currentUser.name} (${getRoleDisplayName(currentUser.role)})`,
+            reviewedAt: nowIso,
+            reviewRemarks,
+          }
+        : a
+    );
+
+    const nextStatus: ComplaintStatus = decision === 'Accepted' ? 'In Progress' : 'Resolved';
+    const timelineItem: StatusHistoryItem = {
+      id: `TL-${Date.now()}`,
+      status: nextStatus,
+      timestamp: nowIso,
+      updatedBy: `${currentUser.name} (${getRoleDisplayName(currentUser.role)})`,
+      role: currentUser.role,
+      remarks: `Appeal ${appealId} ${decision}: ${reviewRemarks}`,
+    };
+
+    const updated: Complaint = {
+      ...target,
+      status: nextStatus,
+      appeals: updatedAppeals,
+      updatedAt: nowIso,
+      timeline: [...(target.timeline || []), timelineItem],
+    };
+
+    setComplaints((prev) => prev.map((c) => (c.id === complaintId ? updated : c)));
+    if (selectedComplaint?.id === complaintId) {
+      setSelectedComplaint(updated);
+    }
+
+    try {
+      await setDoc(doc(db, 'complaints', complaintId), updated, { merge: true });
+    } catch (e) {}
+
+    addAuditLog({
+      complaintId,
+      user: currentUser.name,
+      role: currentUser.role,
+      action: `APPEAL_${decision.toUpperCase()}`,
+      details: `Appeal ${appealId} on ${complaintId} ${decision.toLowerCase()}. Remarks: ${reviewRemarks}`,
+    });
+
+    showToast(
+      `Appeal ${decision}`,
+      `Appeal ${appealId} marked as ${decision}. Status is now ${nextStatus}.`,
+      decision === 'Accepted' ? 'success' : 'info'
+    );
   };
 
   // Upvote complaint
@@ -2233,6 +2869,11 @@ const DEMO_PRESET_USERS: Record<
         isAuthenticated,
         setCurrentUser,
         complaints,
+        myComplaints,
+        canAccessComplaint,
+        canEditProject,
+        getAllowedNextStatuses,
+        deleteComplaint,
         notifications,
         selectedComplaint,
         setSelectedComplaint,
@@ -2241,6 +2882,11 @@ const DEMO_PRESET_USERS: Record<
         setSelectedProject,
         createInfrastructureProject,
         updateInfrastructureProject,
+        deleteInfrastructureProject,
+        officerTasks,
+        createOfficerTask,
+        updateOfficerTask,
+        updateComplaintOperationalFields,
         registeredUsers,
         services,
         announcements,
@@ -2256,6 +2902,7 @@ const DEMO_PRESET_USERS: Record<
         signInDemo,
         signInWithGoogle,
         signUpWithEmail,
+        resetPassword,
         signOutUser,
         createComplaint,
         updateComplaintStatus,
@@ -2269,11 +2916,13 @@ const DEMO_PRESET_USERS: Record<
         approveUser,
         rejectUser,
         toggleUserActiveStatus,
+        toggleDutyStatus,
         addAuditLog,
         updatePriority,
         addInternalNote,
         submitFeedback,
         reopenComplaint,
+        reviewAppeal,
         upvoteComplaint,
         markNotificationRead,
         markAllNotificationsRead,

@@ -1,0 +1,1451 @@
+# MASTER PROMPT: SMART CIVIC PLATFORM – COMPLETE APPLICATION DEBUGGING, ROLE-BASED FUNCTIONALITY, COMPLAINT MANAGEMENT & SYSTEM ENHANCEMENT
+
+## 1. PROJECT INFORMATION
+
+**Project Title:** SMART CIVIC DEVELOPMENT & COMPLAINT RESOLUTION PLATFORM
+
+**Application Name:** SMART CIVIC PLATFORM
+
+**Domain:** FULL-STACK WEB DEVELOPMENT WITH AI INTEGRATION
+
+**Live Application:** https://smartcivic-platform.vercel.app/
+
+**GitHub Repository:** https://github.com/manojverse/Smart-Civic-Platform
+
+## 2. YOUR ROLE
+
+Act as a Senior Full-Stack Developer, Software Architect, UI/UX Designer, Database Engineer, Backend Developer, AI Integration Specialist, and QA Automation Engineer.
+
+You are working on my existing application, SMART CIVIC PLATFORM.
+
+Your task is to thoroughly inspect the complete existing source code, identify all existing bugs, understand the current architecture, and implement the required corrections and improvements directly in the project.
+
+I do not want a newly created application or a completely different design.
+
+I want my existing application to become a stable, fully functional, professional civic infrastructure and complaint management platform.
+
+**MOST IMPORTANT: Do not simply display error messages to hide application problems. Identify and fix the actual root causes.**
+
+Do not just provide suggestions or code snippets. Make actual changes to the existing source code.
+
+Preserve the current technology stack, application design, branding, existing working features, and database structure wherever possible.
+
+---
+
+# 3. APPLICATION NAME AND BRANDING
+
+The official application name is:
+
+**SMART CIVIC PLATFORM**
+
+Do not use the name "CivicSense" anywhere.
+
+Update and maintain the correct application name throughout:
+
+- Login page.
+- Registration page.
+- Citizen dashboard.
+- Field Staff dashboard.
+- Department Officer dashboard.
+- Admin portal.
+- Navigation bars.
+- Sidebar.
+- Page headers.
+- Browser title.
+- Loading screens.
+- Error screens.
+- Notifications.
+- Reports.
+- Application metadata.
+- Footer.
+- Any other visible branding.
+
+Use a consistent SMART CIVIC PLATFORM identity throughout the application.
+
+Do not rename the project or change its core project title unnecessarily.
+
+---
+
+# 4. COMPLETE APPLICATION AUDIT
+
+Before changing the code, inspect the entire existing application.
+
+Inspect:
+
+1. All frontend pages.
+2. All dashboard components.
+3. All existing navigation tabs.
+4. All routes.
+5. All buttons and clickable elements.
+6. All forms and input fields.
+7. All backend APIs.
+8. All authentication logic.
+9. Firebase Authentication.
+10. Cloud Firestore operations.
+11. LocalStorage usage.
+12. Gemini AI integration.
+13. Complaint management.
+14. Complaint tracking.
+15. Department management.
+16. Infrastructure project management.
+17. User management.
+18. Analytics.
+19. Notifications.
+20. GIS map integration.
+21. Error handling.
+22. Deployment configuration.
+
+Identify all existing issues, including:
+
+- White screen errors.
+- Runtime errors.
+- Broken routes.
+- Incorrect imports.
+- Missing components.
+- API failures.
+- Firestore query errors.
+- Undefined values.
+- Incorrect role permissions.
+- Data synchronization problems.
+- Non-functional buttons.
+- Empty pages.
+- Missing loading states.
+- Broken forms.
+- Incorrect image handling.
+- Page refresh problems.
+- Responsive layout problems.
+
+Create a prioritized bug list:
+
+- Critical.
+- High.
+- Medium.
+- Low.
+
+Then fix the problems systematically.
+
+Do not stop after identifying the bugs.
+
+---
+
+# 5. CRITICAL REQUIREMENT – NO GENERIC ERROR PAGES FOR NORMAL OPERATIONS
+
+The application currently displays an error screen similar to:
+
+"Unable to load view"
+
+"An error occurred while rendering this civic view."
+
+This screen must not become the default content for every tab.
+
+I do not want every page to display the same error message.
+
+I want every page to load its actual intended content and functionality.
+
+### Implement proper page-specific states.
+
+**Loading State**
+
+Display an appropriate loading indicator while fetching data.
+
+**Empty State**
+
+If a complaints collection contains zero records, display:
+
+"No complaints found."
+
+If there are no departments:
+
+"No departments available."
+
+If there are no infrastructure projects:
+
+"No infrastructure projects available."
+
+If there are no users:
+
+"No users found."
+
+If there are no analytics records:
+
+"Not enough data available to generate analytics."
+
+**Permission State**
+
+If a user does not have permission, show a clear access-denied message.
+
+**Network Error State**
+
+If an API request fails, show a page-specific error and Retry option.
+
+**Unexpected Rendering Error**
+
+Use an error boundary to isolate the failing component and provide a recovery option.
+
+### Strict rules
+
+- Empty data must never cause a white screen.
+- Missing optional fields must not crash components.
+- API failures must not crash unrelated pages.
+- One component failure must not unnecessarily crash the entire application.
+- Page refresh must work correctly.
+- Direct URL navigation must work correctly.
+- Do not hide actual bugs behind generic error screens.
+- Do not display fake success messages.
+
+Fix the underlying issue instead of simply changing the error message.
+
+---
+
+# 6. USER AUTHENTICATION AND ACCOUNT MANAGEMENT
+
+Implement reliable authentication.
+
+Support:
+
+### A. New Account Registration
+
+Users must be able to:
+
+- Create an account.
+- Enter their name.
+- Enter email.
+- Set a password.
+- Validate required fields.
+- Prevent duplicate email registrations.
+- Log in securely.
+- Log out correctly.
+
+Do not allow ordinary public users to create Admin or privileged officer accounts.
+
+Privileged roles must be assigned through an authorized administrative process.
+
+### B. Demo Account Login
+
+Provide clearly labelled demo login options:
+
+- Citizen Demo.
+- Field Staff Demo.
+- Department Officer Demo.
+- Admin Demo.
+
+Demo accounts must authenticate correctly and open the corresponding dashboards.
+
+Important:
+
+- Do not automatically create accounts when the application opens.
+- Do not automatically log in users without their action.
+- Do not automatically populate random complaints or projects.
+- Do not reset existing data.
+- Do not expose production passwords or secret credentials in frontend code.
+
+Use a secure demo-account provisioning process.
+
+Preserve valid authenticated sessions across page refreshes.
+
+Protect every role-specific route.
+
+---
+
+# 7. ROLE-BASED APPLICATION STRUCTURE
+
+The application must support four roles.
+
+## ROLE 1: CITIZEN
+
+Citizen navigation should include relevant sections such as:
+
+- Dashboard.
+- Raise Complaint.
+- My Complaints.
+- Track Complaints.
+- Notifications.
+- Profile.
+
+Citizens must be able to:
+
+- Register and log in.
+- Submit civic complaints.
+- View their own complaints.
+- Track complaint status.
+- View status history.
+- View assigned department.
+- View relevant officer updates.
+- View complaint photographs.
+- Receive notifications.
+- Submit feedback.
+- Reopen eligible complaints.
+
+Citizens must not see administrative controls.
+
+## ROLE 2: FIELD STAFF
+
+Field Staff navigation should include:
+
+- Dashboard.
+- Assigned Complaints.
+- Planned Work.
+- In Progress.
+- Completed Work.
+- Work History.
+- Notifications.
+- Profile.
+
+Field Staff must be able to:
+
+- View complaints assigned to them.
+- Accept assigned work.
+- View complaint details.
+- View location and photographs.
+- Add inspection remarks.
+- Update work progress.
+- Upload progress photographs.
+- Upload before-and-after evidence.
+- Mark work as completed.
+- View verification results.
+
+Field Staff must not approve their own work as officially verified.
+
+## ROLE 3: DEPARTMENT OFFICER
+
+Department Officer navigation should include:
+
+- Dashboard.
+- New Complaints.
+- Department Complaints.
+- Assign Staff.
+- Planned Work.
+- In Progress.
+- Completed Work.
+- Verification.
+- Escalations.
+- Analytics.
+- Notifications.
+- Profile.
+
+Department Officers must be able to:
+
+- Review complaints belonging to their department.
+- Confirm complaint categories.
+- Set priority.
+- Assign field staff.
+- Schedule work.
+- Monitor staff progress.
+- Verify completed work.
+- Return incomplete work for correction.
+- Escalate overdue complaints.
+- View department analytics.
+
+They must only access their authorized departments and records.
+
+## ROLE 4: ADMINISTRATOR
+
+Admin navigation should include:
+
+- Dashboard.
+- Complaints.
+- Track Complaints.
+- Departments.
+- Projects.
+- Users.
+- Analytics.
+- Notifications.
+- Announcements.
+- Audit Logs.
+- Settings.
+
+Inspect the existing navigation and preserve other useful tabs already present in the application.
+
+Admin must be able to monitor and manage the complete application according to administrative permissions.
+
+---
+
+# 8. ADMIN PORTAL – ALL TABS MUST FUNCTION
+
+Every Admin Portal tab must have its own correct page, data, and functionality.
+
+## 8.1 Dashboard
+
+Display actual statistics:
+
+- Total users.
+- Total citizens.
+- Total field staff.
+- Total department officers.
+- Total complaints.
+- New complaints.
+- Under Review.
+- Planned.
+- In Progress.
+- Completed.
+- Resolved.
+- Closed.
+- Overdue complaints.
+- Total infrastructure projects.
+- Active projects.
+- Completed projects.
+- Delayed projects.
+
+Include:
+
+- Complaint status chart.
+- District-wise complaints.
+- Department-wise complaints.
+- Recent complaints.
+- Recent project updates.
+- Recent activities.
+- Pending actions.
+
+Use actual database records.
+
+Do not hardcode statistics.
+
+If the database has no records, display zero and appropriate empty states.
+
+## 8.2 Complaints
+
+This must be a complete complaint management page.
+
+Display all complaints accessible to Admin.
+
+Each row/card must include:
+
+- Complaint ID.
+- Complaint title.
+- Category.
+- Description preview.
+- Citizen name.
+- District.
+- City or town.
+- Ward.
+- Department.
+- Assigned Field Staff.
+- Severity.
+- Current status.
+- Submitted date.
+- Last updated date.
+- Actions.
+
+Implement:
+
+- Search by complaint ID.
+- Search by title.
+- Search by citizen.
+- Filter by category.
+- Filter by district.
+- Filter by department.
+- Filter by status.
+- Filter by severity.
+- Sort by submission date.
+- View complaint details.
+- View uploaded images.
+- View complaint location.
+- View status history.
+- Assign complaints.
+- Reassign complaints.
+- Update permitted statuses.
+- Escalate complaints.
+- Review completion evidence.
+- Verify complaints.
+- Reject invalid complaints with a reason.
+- Reopen eligible complaints.
+
+All actions must actually update the correct database record.
+
+## 8.3 Departments
+
+Implement complete department management.
+
+Admin must be able to:
+
+- View departments.
+- Add departments.
+- Edit departments.
+- View department details.
+- View department officers.
+- View field staff.
+- View assigned complaints.
+- View department workload.
+- View department analytics.
+- Activate or deactivate departments where appropriate.
+
+Suggested departments:
+
+1. Roads and Highways.
+2. Water Supply.
+3. Drainage and Sewerage.
+4. Sanitation and Solid Waste Management.
+5. Streetlight and Electrical Maintenance.
+6. Parks and Public Spaces.
+7. Public Infrastructure.
+8. Public Health and Sanitation.
+9. General Municipal Services.
+
+Department records must be connected to officers, staff, complaints, and infrastructure projects.
+
+## 8.4 Projects
+
+Implement complete infrastructure project management.
+
+Admin must be able to:
+
+- View all projects.
+- Add a project.
+- Edit a project.
+- View project details.
+- Update project progress.
+- Update project milestones.
+- Update project status.
+- Add supporting photographs.
+- Search projects.
+- Filter projects.
+- View project locations on the map.
+
+Project fields:
+
+- Project ID.
+- Project name.
+- Description.
+- Category.
+- District.
+- City or town.
+- Ward.
+- Coordinates.
+- Department.
+- Budget.
+- Contractor, if available.
+- Start date.
+- Expected completion date.
+- Progress percentage.
+- Milestones.
+- Status.
+- Photographs.
+
+## 8.5 Users
+
+Implement complete user management.
+
+Admin must be able to:
+
+- View users.
+- Search users.
+- Filter by role.
+- View user details.
+- View citizen complaint history.
+- View staff assignment history.
+- View department association.
+- Assign permitted roles.
+- Edit allowed user details.
+- Activate or deactivate accounts where supported.
+
+Display:
+
+- User ID.
+- Name.
+- Email.
+- Role.
+- Department.
+- Account status.
+- Registration date.
+
+Never expose passwords or secret credentials.
+
+## 8.6 Analytics
+
+Implement real analytics using database records.
+
+Include:
+
+- Complaint trends.
+- Monthly complaint counts.
+- Category-wise complaints.
+- District-wise complaints.
+- Department-wise complaints.
+- Pending versus completed complaints.
+- Complaint status distribution.
+- Average resolution duration.
+- Department workload.
+- Infrastructure project progress.
+- Delayed project counts.
+
+Do not invent numbers or display fake charts.
+
+If data is insufficient, explain that there is insufficient data.
+
+## 8.7 Track Complaints
+
+Implement a fully functional complaint-tracking module.
+
+Admin must be able to:
+
+- Search by complaint ID.
+- Search by citizen.
+- Filter by district.
+- Filter by department.
+- Filter by status.
+- View complete complaint history.
+- View assigned staff.
+- View planned work date.
+- View progress updates.
+- View officer remarks.
+- View evidence.
+- View escalation history.
+- View verification history.
+- View final resolution.
+
+The complaint tracking page must show the actual lifecycle, not a static demonstration timeline.
+
+---
+
+# 9. CITIZEN COMPLAINT MANAGEMENT
+
+Implement the complete citizen complaint workflow.
+
+### Complaint form
+
+Required fields:
+
+- Complaint title.
+- Description.
+- Category.
+- District.
+- City or town.
+- Location.
+- Severity, if required.
+
+Optional fields:
+
+- Ward.
+- Landmark.
+- GPS coordinates.
+- Photograph.
+
+Categories:
+
+- Road Damage.
+- Potholes.
+- Drainage Problems.
+- Water Leakage.
+- Garbage Accumulation.
+- Streetlight Failure.
+- Public Infrastructure Damage.
+- Sanitation Issues.
+- Public Safety Issues.
+- Other Civic Issues.
+
+### Image upload rules
+
+This is a critical requirement.
+
+If the citizen does not upload an image:
+
+- Allow submission if the image is optional.
+- Save image as null or an empty value.
+- Do not generate random image paths.
+- Do not use another complaint's image.
+- Do not run image verification.
+- Do not report image mismatch.
+- Display "No image attached".
+
+If the citizen uploads an image:
+
+- Process the actual selected image.
+- Validate file type and size.
+- Store the correct image reference.
+- Pass the actual uploaded image to Gemini image analysis.
+- Compare it with the complaint description and category.
+- Display meaningful analysis results.
+
+If the image is unrelated:
+
+- Explain the mismatch.
+- Allow the citizen to upload a relevant image or continue without an image if allowed.
+
+If AI analysis is unavailable:
+
+- Show "Image verification temporarily unavailable."
+- Never pretend verification succeeded.
+- Do not fabricate a result.
+
+### Complaint submission
+
+After successful submission:
+
+- Generate a unique complaint ID.
+- Save the complaint to Firestore.
+- Save the authenticated citizen ID.
+- Save creation timestamp.
+- Set initial status to Submitted.
+- Save location correctly.
+- Save the actual attachment reference, if present.
+- Show a success message only after database persistence succeeds.
+
+The complaint must appear in:
+
+1. Citizen's My Complaints page.
+2. Appropriate Department Officer's complaint list.
+3. Authorized Field Staff's list after assignment.
+4. Admin Complaints page.
+5. Track Complaints page.
+
+All roles must refer to the same complaint record.
+
+---
+
+# 10. COMPLAINT ASSIGNMENT AND WORK MANAGEMENT
+
+Implement the complete operational workflow.
+
+### Department Officer assignment
+
+Department Officer must be able to:
+
+- Select a complaint.
+- Review complaint details.
+- Confirm department.
+- Select an authorized Field Staff member.
+- Assign the complaint.
+- Set priority.
+- Schedule planned work date.
+- Add work instructions.
+
+### Field Staff work management
+
+Field Staff must be able to:
+
+- View assigned complaints.
+- Accept assigned work.
+- Move the complaint into In Progress.
+- Add progress remarks.
+- Upload work photographs.
+- Record inspection details.
+- Submit completion evidence.
+- Mark work as completed.
+
+### Department Officer verification
+
+Department Officer must be able to:
+
+- View submitted completion evidence.
+- Review remarks.
+- Review before-and-after photographs.
+- Approve the work.
+- Return the work for correction.
+- Add mandatory remarks when returning work.
+
+Field Staff must not approve their own completed work.
+
+---
+
+# 11. UNIFIED COMPLAINT STATUS WORKFLOW
+
+Use a consistent complaint lifecycle across all dashboards.
+
+Recommended statuses:
+
+1. Submitted.
+2. Under Review.
+3. Assigned.
+4. Planned.
+5. In Progress.
+6. Work Completed.
+7. Verification Pending.
+8. Resolved.
+9. Closed.
+
+Additional statuses:
+
+- Rejected.
+- On Hold.
+- Escalated.
+- Reopened.
+
+### Example workflow
+
+Citizen submits complaint:
+Submitted.
+
+Department Officer reviews:
+Under Review.
+
+Department Officer assigns Field Staff:
+Assigned.
+
+Officer schedules work:
+Planned.
+
+Field Staff starts the work:
+In Progress.
+
+Field Staff completes work:
+Work Completed / Verification Pending.
+
+Department Officer checks the evidence:
+Verified / Resolved.
+
+Authorized closure:
+Closed.
+
+If evidence is insufficient:
+Return to In Progress with correction remarks.
+
+If an eligible complaint is reopened:
+Reopened.
+
+Implement valid state transitions.
+
+Do not allow unauthorized arbitrary status changes.
+
+For every status update, save:
+
+- Complaint ID.
+- Previous status.
+- New status.
+- Updated by.
+- User role.
+- Timestamp.
+- Remarks.
+- Evidence reference.
+
+Never overwrite the historical status records.
+
+---
+
+# 12. TRACK COMPLAINTS – COMPLETE TIMELINE
+
+Track Complaints must allow users to understand exactly what happened to a complaint.
+
+### Citizen
+
+A citizen must be able to view their own complaint progress.
+
+Display:
+
+- Complaint submitted date.
+- Current status.
+- Assigned department.
+- Assigned officer, when appropriate.
+- Planned work date.
+- Field staff assignment, when appropriate.
+- Progress updates.
+- Officer remarks.
+- Uploaded evidence.
+- Verification status.
+- Resolution date.
+
+### Field Staff
+
+Display assigned complaint details, work instructions, scheduled dates, and progress history.
+
+### Department Officer
+
+Display department-level complaint progress, assignment history, staff updates, verification, and escalations.
+
+### Admin
+
+Display the complete authorized complaint history.
+
+Use real Firestore records.
+
+Use realtime listeners where supported reliably. Otherwise implement correct refetching.
+
+Clean up listeners when components unmount.
+
+Never generate fake timeline events or fake progress percentages.
+
+---
+
+# 13. FIELD STAFF DASHBOARD – COMPLETE IMPLEMENTATION
+
+Every existing Field Staff tab must work.
+
+### Overview
+
+Display:
+
+- Assigned complaints.
+- Planned work.
+- In-progress work.
+- Completed work.
+- Pending verification.
+- Recent updates.
+
+### Assigned Complaints
+
+Show complaints assigned to the logged-in Field Staff member.
+
+### Planned Work
+
+Show scheduled complaints that have not started.
+
+### In Progress
+
+Show work currently being handled.
+
+### Completed Work
+
+Show submitted completion records and verification status.
+
+### Work History
+
+Show actual previous assignments and actions.
+
+### Notifications
+
+Show real assignment and work update notifications.
+
+### Profile
+
+Show the authenticated staff profile and permitted editable details.
+
+Do not display another staff member's private assignments.
+
+---
+
+# 14. DEPARTMENT OFFICER DASHBOARD – COMPLETE IMPLEMENTATION
+
+Every existing Department Officer tab must work.
+
+Implement:
+
+- Department Overview.
+- New Complaints.
+- Department Complaints.
+- Assign Staff.
+- Planned Work.
+- In Progress.
+- Completed Work.
+- Verification.
+- Escalations.
+- Analytics.
+- Notifications.
+- Profile.
+
+Display only records belonging to the officer's authorized department.
+
+Allow authorized officers to assign, schedule, monitor, verify, and escalate complaints.
+
+Prevent assignments to unauthorized or inactive staff.
+
+---
+
+# 15. TAMIL NADU MAP INTEGRATION
+
+The primary map focus must be Tamil Nadu, India.
+
+Use Leaflet and OpenStreetMap or the existing compatible mapping provider.
+
+Set the initial map view around Tamil Nadu.
+
+Include representative locations such as:
+
+- Chennai.
+- Coimbatore.
+- Madurai.
+- Tiruchirappalli.
+- Salem.
+- Tirunelveli.
+- Erode.
+- Vellore.
+- Kanchipuram.
+- Tiruvallur.
+- Thanjavur.
+- Dindigul.
+- Thoothukudi.
+- Kanniyakumari.
+- Cuddalore.
+- Villupuram.
+- Dharmapuri.
+- Krishnagiri.
+- Namakkal.
+- Karur.
+- Sivaganga.
+- Ramanathapuram.
+- Virudhunagar.
+- Tenkasi.
+- Tirupur.
+- Ranipet.
+- Tirupattur.
+- Chengalpattu.
+- Mayiladuthurai.
+- Nagapattinam.
+- Tiruvarur.
+- Ariyalur.
+- Perambalur.
+- Nilgiris.
+- Kallakurichi.
+- Tiruvannamalai.
+
+### Infrastructure projects map
+
+Display multiple infrastructure project markers across representative Tamil Nadu locations.
+
+Project categories:
+
+- Road Development.
+- Road Reconstruction.
+- Stormwater Drainage.
+- Underground Drainage.
+- Drinking Water Supply.
+- Streetlight Installation.
+- Public Park Development.
+- Bus Stand Renovation.
+- Government School Infrastructure.
+- Public Building Renovation.
+- Waste Management.
+- Public Sanitation.
+
+Each marker should display:
+
+- Project ID.
+- Project name.
+- District.
+- City or town.
+- Ward.
+- Category.
+- Department.
+- Status.
+- Budget.
+- Start date.
+- Expected completion date.
+- Actual progress percentage.
+
+Use different marker colours:
+
+- Green: Completed.
+- Blue: In Progress.
+- Orange: Delayed.
+- Grey: Planned.
+- Red: Critical.
+
+### Complaint map
+
+Show complaints as a separate layer from infrastructure projects.
+
+Allow filters by:
+
+- District.
+- Complaint category.
+- Department.
+- Severity.
+- Status.
+
+Clicking a complaint marker must display complaint ID, category, status, and location.
+
+Do not expose private citizen information.
+
+### Map data rules
+
+- Do not use random GPS coordinates.
+- Use valid geographic coordinates.
+- Do not display projects in incorrect districts.
+- Clearly label demonstration projects as Demo Data.
+- Never present demo records as actual government projects.
+- Allow authorized Admin users to add, edit, and remove project records.
+
+---
+
+# 16. AI INTEGRATION
+
+Preserve the existing Gemini API integration.
+
+Implement or improve:
+
+- Complaint classification.
+- Category suggestion.
+- Severity assessment.
+- Department suggestion.
+- Complaint description analysis.
+- Uploaded image analysis.
+- Potential duplicate complaint detection.
+- Resolution priority suggestion.
+- Safety risk identification.
+
+Rules:
+
+- Analyze actual user-submitted content.
+- Analyze the actual uploaded image.
+- Never invent an image URL.
+- Never pretend AI analysis succeeded.
+- Clearly identify AI suggestions as suggestions.
+- Provide a fallback if Gemini is unavailable.
+- Validate AI responses before saving.
+- Keep API keys on the backend.
+
+Duplicate detection should identify potential duplicates, not automatically reject valid complaints.
+
+Use existing geographic distance and text similarity algorithms where appropriate.
+
+---
+
+# 17. DATABASE AND DATA SYNCHRONIZATION
+
+Audit the current Firebase Authentication and Firestore implementation.
+
+Preserve the existing schema wherever possible.
+
+Inspect collections such as:
+
+- users.
+- complaints.
+- infrastructure_projects.
+- departments.
+- notifications.
+- announcements.
+- audit_logs.
+
+Ensure:
+
+1. Unique document IDs.
+2. Correct user references.
+3. Correct complaint references.
+4. Correct department references.
+5. Correct staff assignments.
+6. Correct status history.
+7. Successful awaited writes.
+8. Proper error handling.
+9. Correct realtime listeners.
+10. Proper listener cleanup.
+11. No duplicate complaint records.
+12. Correct refresh persistence.
+13. Consistent dashboard data.
+14. Secure Firestore rules.
+
+Do not treat LocalStorage as permanent cloud persistence.
+
+If LocalStorage is used as a fallback, distinguish temporary local data from successfully saved cloud records.
+
+Never display a successful save message if the database write failed.
+
+Do not silently switch data sources in ways that create inconsistent dashboards.
+
+---
+
+# 18. NOTIFICATIONS AND ACTIVITY HISTORY
+
+Implement role-specific notifications.
+
+Examples:
+
+Citizen:
+- Complaint submitted.
+- Complaint assigned.
+- Work planned.
+- Work started.
+- Work completed.
+- Complaint resolved.
+- Complaint reopened.
+
+Field Staff:
+- New complaint assigned.
+- Work scheduled.
+- Complaint reassigned.
+- Verification returned for correction.
+- Work approved.
+
+Department Officer:
+- New complaint received.
+- Complaint escalated.
+- Work completed.
+- Verification pending.
+
+Admin:
+- New complaint submitted.
+- New user registered.
+- Complaint escalated.
+- Project status updated.
+- Important system activity.
+
+Notifications must be connected to actual application events.
+
+Do not create fake notifications automatically.
+
+---
+
+# 19. UI/UX AND RESPONSIVE DESIGN
+
+Maintain the current SMART CIVIC PLATFORM visual identity.
+
+Improve consistency without unnecessarily redesigning existing working screens.
+
+Ensure:
+
+- Consistent sidebars.
+- Correct navigation.
+- Consistent page headers.
+- Proper cards.
+- Functional tables.
+- Working search and filters.
+- Clear forms.
+- Proper status badges.
+- Confirmation dialogs.
+- Toast notifications.
+- Loading indicators.
+- Empty states.
+- Error states.
+- Mobile responsiveness.
+- Tablet responsiveness.
+- Desktop responsiveness.
+- Accessible labels.
+- Keyboard-friendly controls.
+
+Every visible button must perform its advertised action.
+
+Remove dead buttons and placeholder links.
+
+Do not leave decorative controls that appear functional but do nothing.
+
+---
+
+# 20. SECURITY AND PERFORMANCE
+
+Implement:
+
+- Secure authentication.
+- Role-based authorization.
+- Firestore security rules.
+- Backend permission checks.
+- Form validation.
+- File upload validation.
+- API input validation.
+- Secret management.
+- Safe error logging.
+- Proper session handling.
+- Image optimization.
+- Memory leak prevention.
+- Listener cleanup.
+- API request optimization.
+
+Never weaken security rules to make features work.
+
+Never expose passwords, API keys, private tokens, or confidential citizen information.
+
+---
+
+# 21. COMPLETE TESTING
+
+Test every role and every major workflow.
+
+### Citizen testing
+
+- Registration.
+- Login.
+- Dashboard.
+- Raise complaint.
+- Submit without image.
+- Submit with image.
+- View My Complaints.
+- Track complaint.
+- View status history.
+- View officer updates.
+- Receive notifications.
+- Submit feedback.
+- Logout.
+
+### Field Staff testing
+
+- Login.
+- Dashboard.
+- Assigned Complaints.
+- Accept work.
+- Planned Work.
+- In Progress.
+- Update progress.
+- Add remarks.
+- Upload evidence.
+- Complete work.
+- View verification status.
+- Work History.
+- Logout.
+
+### Department Officer testing
+
+- Login.
+- Dashboard.
+- New Complaints.
+- Department Complaints.
+- Assign Staff.
+- Schedule work.
+- Monitor progress.
+- Completed Work.
+- Verification.
+- Return work for correction.
+- Escalations.
+- Analytics.
+- Logout.
+
+### Admin testing
+
+- Login.
+- Dashboard.
+- Complaints.
+- Track Complaints.
+- Departments.
+- Projects.
+- Users.
+- Analytics.
+- Notifications.
+- Announcements.
+- Audit Logs.
+- Settings.
+- Logout.
+
+### Application-wide testing
+
+- Refresh every major route.
+- Open every route directly.
+- Test browser back and forward.
+- Test empty database collections.
+- Test missing images.
+- Test failed API requests.
+- Test expired sessions.
+- Test unauthorized access.
+- Test slow network conditions.
+- Test mobile layout.
+- Test production build.
+
+Do not mark tests as passed unless they were actually executed.
+
+---
+
+# 22. IMPLEMENTATION ORDER
+
+Follow this implementation sequence.
+
+**PHASE 1 – Source Code Audit**
+
+Inspect the existing architecture, identify all routes, components, roles, tabs, and data dependencies.
+
+**PHASE 2 – Root Cause Bug Fixing**
+
+Fix white screens, rendering failures, routing problems, authentication issues, and API errors.
+
+**PHASE 3 – Citizen Portal**
+
+Complete all citizen tabs and complaint submission functionality.
+
+**PHASE 4 – Field Staff Portal**
+
+Complete assigned complaints, planned work, in-progress work, completion evidence, and work history.
+
+**PHASE 5 – Department Officer Portal**
+
+Complete complaint review, staff assignment, scheduling, monitoring, verification, and escalation.
+
+**PHASE 6 – Admin Portal**
+
+Complete Dashboard, Complaints, Track Complaints, Departments, Projects, Users, Analytics, and all other existing tabs.
+
+**PHASE 7 – Unified Complaint Workflow**
+
+Ensure that one complaint moves correctly through all authorized roles and status transitions.
+
+**PHASE 8 – Database Integration**
+
+Fix Firestore persistence, synchronization, data integrity, and security rules.
+
+**PHASE 9 – Map and Infrastructure Projects**
+
+Complete Tamil Nadu-focused project and complaint visualization.
+
+**PHASE 10 – AI Integration**
+
+Verify Gemini classification, image analysis, and fallback handling.
+
+**PHASE 11 – Testing**
+
+Test every tab, button, form, route, and role.
+
+**PHASE 12 – Production Readiness**
+
+Run the production build, fix all build errors, and prepare deployment.
+
+---
+
+# 23. FINAL ACCEPTANCE CRITERIA
+
+The application is considered complete only when:
+
+1. The correct application name SMART CIVIC PLATFORM is used everywhere.
+2. Citizen dashboard works.
+3. Field Staff dashboard works.
+4. Department Officer dashboard works.
+5. Admin portal works.
+6. Every existing tab opens its intended page.
+7. No empty state produces a white screen.
+8. No generic error page replaces actual functionality.
+9. Complaint submission works.
+10. Image upload works correctly.
+11. Complaints are visible to the correct authorized roles.
+12. Department Officers can assign Field Staff.
+13. Field Staff can update work progress.
+14. Officers can schedule work.
+15. Officers can verify completion.
+16. Citizens can track actual complaint progress.
+17. Admin can manage all authorized complaint records.
+18. Departments management works.
+19. Projects management works.
+20. Users management works.
+21. Analytics uses actual database records.
+22. Track Complaints shows the actual complaint timeline.
+23. Firestore persistence works.
+24. Role-based security works.
+25. Tamil Nadu map integration works.
+26. Direct navigation works.
+27. Page refresh works.
+28. All visible buttons perform their intended actions.
+29. Production build succeeds.
+30. No known critical runtime errors remain.
+
+---
+
+# 24. STRICT DEVELOPMENT RULES
+
+These instructions are mandatory.
+
+- Do not rebuild the application from scratch.
+- Do not replace the existing technology stack unnecessarily.
+- Do not remove working features.
+- Do not rename the application to CivicSense.
+- Always use SMART CIVIC PLATFORM as the application name.
+- Do not show generic error pages for normal empty data.
+- Do not hide bugs by displaying error messages.
+- Do not create random users.
+- Do not create random complaints.
+- Do not create random image URLs.
+- Do not fabricate AI responses.
+- Do not fabricate project coordinates.
+- Do not invent analytics.
+- Do not show fake success messages.
+- Do not mark untested features as completed.
+- Do not bypass role permissions.
+- Do not weaken database security.
+- Preserve existing user data.
+- Use the existing application architecture.
+- Make all necessary changes directly in the source code.
+
+# 25. FINAL EXECUTION INSTRUCTION
+
+Start by inspecting the complete existing application.
+
+First identify the exact root cause of the "Unable to load view" issue shown in the attached screenshot.
+
+Then create a complete role-wise inventory of every existing tab and identify what functionality each tab is supposed to provide.
+
+After that, implement the fixes systematically.
+
+Do not stop after fixing the error screen.
+
+Do not stop after completing the Admin Dashboard.
+
+Do not stop after completing the Complaints page.
+
+Complete all Citizen, Field Staff, Department Officer, and Admin workflows.
+
+The most important requirement is the complete complaint lifecycle:
+
+Citizen submits complaint → Department Officer reviews → Field Staff assigned → Work planned → Work in progress → Field Staff submits completion evidence → Department Officer verifies → Complaint resolved → Citizen tracks the complete history.
+
+All roles must work with the same underlying complaint records, with permissions appropriate to each role.
+
+**FINAL EXPECTATION: Deliver a stable, fully functional, professional SMART CIVIC PLATFORM where every page and every tab works according to its purpose. Fix actual bugs, implement real functionality, maintain data consistency, test every role, and do not replace missing functionality with generic error screens or fake data.**

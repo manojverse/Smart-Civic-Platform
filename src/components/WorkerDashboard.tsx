@@ -58,10 +58,10 @@ export const WorkerDashboard: React.FC = () => {
   const workerTasks = complaints.filter((c) => {
     // If assigned directly to this worker by name, badge, or id
     const isDirectMatch =
-      c.assignedOfficer?.badgeNumber === currentUser.employeeId ||
-      c.assignedOfficer?.id === currentUser.id ||
-      c.assignedOfficer?.name.toLowerCase().includes(currentUser.name.toLowerCase()) ||
-      c.workerProof?.workerId === currentUser.id;
+      (currentUser.employeeId && c.assignedOfficer?.badgeNumber === currentUser.employeeId) ||
+      (currentUser.id && c.assignedOfficer?.id === currentUser.id) ||
+      (currentUser.name && c.assignedOfficer?.name && (c.assignedOfficer.name || '').toLowerCase().includes((currentUser.name || '').toLowerCase())) ||
+      (currentUser.id && c.workerProof?.workerId === currentUser.id);
 
     // Or if matching the worker's assigned department
     const isDeptMatch = currentUser.department
@@ -308,10 +308,10 @@ export const WorkerDashboard: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{task.location.address}</span>
+                          <span>{task.location?.address || 'Site address'}</span>
                         </div>
                         <div className="flex items-center gap-1 font-medium text-slate-700">
-                          <span>Ward: {task.location.ward}</span>
+                          <span>Ward: {task.location?.ward || 'Unassigned'}</span>
                         </div>
                         {task.assignedOfficer?.distanceKm !== undefined && (
                           <div className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
@@ -321,13 +321,13 @@ export const WorkerDashboard: React.FC = () => {
                         )}
                         <div className="flex items-center gap-1 text-slate-400">
                           <Clock className="w-3.5 h-3.5" />
-                          <span>SLA: {task.slaHours} Hours</span>
+                          <span>SLA: {task.slaHours || 24} Hours</span>
                         </div>
                       </div>
 
                       {/* Photo Thumbnails Preview */}
                       <div className="flex items-center gap-3 pt-2">
-                        {task.photos.length > 0 && (
+                        {Array.isArray(task.photos) && task.photos.length > 0 && (
                           <div>
                             <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Citizen Evidence</div>
                             <img
@@ -424,7 +424,7 @@ export const WorkerDashboard: React.FC = () => {
 
                       {/* Navigation Link */}
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${task.location.lat},${task.location.lng}`}
+                        href={`https://www.google.com/maps/search/?api=1&query=${task.location?.lat || 13.0827},${task.location?.lng || 80.2707}`}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition-colors"

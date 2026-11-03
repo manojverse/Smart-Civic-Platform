@@ -19,10 +19,12 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
-import { SmartServiceItem } from '../types';
+interface SmartCityServicesProps {
+  onReportIssue?: () => void;
+}
 
-export const SmartCityServices: React.FC = () => {
-  const { services, setActiveTab } = useCivic();
+export const SmartCityServices: React.FC<SmartCityServicesProps> = ({ onReportIssue }) => {
+  const { services } = useCivic();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
@@ -44,7 +46,7 @@ export const SmartCityServices: React.FC = () => {
     return (
       item.name.toLowerCase().includes(q) ||
       item.address.toLowerCase().includes(q) ||
-      item.ward.toLowerCase().includes(q) ||
+      (item.ward ? item.ward.toLowerCase().includes(q) : false) ||
       item.phone.includes(q)
     );
   });
@@ -202,7 +204,7 @@ export const SmartCityServices: React.FC = () => {
               </a>
 
               <button
-                onClick={() => setActiveTab('report')}
+                onClick={() => onReportIssue && onReportIssue()}
                 className="p-2 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors"
                 title="Report issue at this location"
               >

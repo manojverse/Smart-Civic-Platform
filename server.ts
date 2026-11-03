@@ -150,7 +150,7 @@ async function startServer() {
   app.get('/api/health', (req, res) => {
     res.json({
       status: 'ok',
-      service: 'CivicSense Backend API',
+      service: 'SMART CIVIC PLATFORM API',
       aiReady: Boolean(process.env.GEMINI_API_KEY),
       authReady: Boolean(JWT_SECRET),
       timestamp: new Date().toISOString(),
@@ -304,7 +304,7 @@ async function startServer() {
       const client = getGeminiClient();
 
       if (client) {
-        const prompt = `You are the AI Complaint Verification and Smart Routing Engine for Vizianagaram Municipal Corporation (VMC), Andhra Pradesh.
+        const prompt = `You are the AI Complaint Verification and Smart Routing Engine for Greater Chennai Corporation (GCC) and Municipal Administration, Tamil Nadu.
 Analyze this citizen civic report:
 Title: "${title || ''}"
 Description: "${description || ''}"
@@ -315,7 +315,7 @@ Ward field: "${ward || ''}"
 Existing Open Complaints: ${JSON.stringify(existingComplaints || [])}
 
 Verify and classify following these STRICT RULES:
-1. validity: "VALID" (genuine public-service civic problem), "INVALID" (unrelated, spam, jokes, ads, praise like "Vizianagaram is a beautiful city", or gibberish like "asdfghjkl 12345"), or "NEEDS_REVIEW" (unclear or insufficient info).
+1. validity: "VALID" (genuine public-service civic problem), "INVALID" (unrelated, spam, jokes, ads, praise like "Chennai is a beautiful city", or gibberish like "asdfghjkl 12345"), or "NEEDS_REVIEW" (unclear or insufficient info).
 2. confidence: Integer 0 to 100 representing classification certainty.
 3. category: One of: "Roads & Infrastructure", "Garbage & Waste Management", "Water Supply", "Drainage & Sewage", "Street Lighting", "Electricity", "Public Safety", "Traffic & Transport", "Parks & Public Spaces", "Sanitation", "Government Services", "Public Property", "Environmental Issues", "Other Civic Issues".
 4. subcategory: Specific issue (e.g. "Pothole", "Waste Collection", "Electrical Hazard", "Streetlight Failure", "Blocked Drain", "Pipeline Leakage", "Road Damage", "Traffic Management", etc.).
@@ -408,13 +408,13 @@ Verify and classify following these STRICT RULES:
         reason = 'The submitted text appears to contain random keystrokes or meaningless characters rather than an actionable civic grievance.';
         dept = 'Requires Municipal Review';
         action = 'No action required for meaningless submission.';
-      } else if (/beautiful city|love vizianagaram|nice city|hello how are you/i.test(combined) && !combined.includes('pothole') && !combined.includes('drain')) {
+      } else if (/beautiful city|love chennai|nice city|hello how are you/i.test(combined) && !combined.includes('pothole') && !combined.includes('drain')) {
         validity = 'INVALID';
         confidence = 97;
         cat = 'Other Civic Issues';
         subcat = 'General Expression';
         prio = 'LOW';
-        loc = combined.includes('vizianagaram') ? 'Vizianagaram' : '';
+        loc = combined.includes('chennai') ? 'Chennai' : '';
         locStatus = loc ? 'PROVIDED' : 'MISSING';
         reason = 'The submission expresses general praise or appreciation and does not report a municipal problem or civic service grievance.';
         dept = 'Requires Municipal Review';
@@ -479,11 +479,11 @@ Verify and classify following these STRICT RULES:
       if (address && address.trim().length > 3 && !address.startsWith('Geo-Location')) {
         loc = [address, landmark, ward].filter(Boolean).join(', ');
         locStatus = 'PROVIDED';
-      } else if (combined.includes('rtc complex')) {
-        loc = 'RTC Complex, Vizianagaram';
+      } else if (combined.includes('central station') || combined.includes('ripon building')) {
+        loc = 'Central / Ripon Building Zone, Chennai';
         locStatus = 'PROVIDED';
-      } else if (combined.includes('municipal park')) {
-        loc = 'Near Municipal Park, Vizianagaram';
+      } else if (combined.includes('anna nagar') || combined.includes('roundtana')) {
+        loc = 'Anna Nagar Roundtana, Chennai';
         locStatus = 'PROVIDED';
       } else if (combined.includes('school')) {
         loc = 'Near School';
@@ -621,7 +621,7 @@ Evaluate:
             const mimeType = match[1];
             const base64Data = match[2];
 
-            const prompt = `You are a forensic Computer Vision and AI Fraud Detection system for Vizianagaram Municipal Corporation (VMC).
+            const prompt = `You are a forensic Computer Vision and AI Fraud Detection system for Greater Chennai Corporation and Tamil Nadu Municipal Administration.
 Analyze this uploaded photographic evidence submitted for a civic complaint:
 Reported Category: "${reportedCategory || 'Unspecified'}"
 Reported Title: "${reportedTitle || ''}"
@@ -809,7 +809,7 @@ Evaluate with high rigor:
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`CivicSense Server running on http://0.0.0.0:${PORT}`);
+    console.log(`SMART CIVIC PLATFORM Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

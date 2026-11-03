@@ -256,22 +256,150 @@ const TRANSLATIONS: Record<Language, Translations> = {
 
     heroTitle: 'Smart Civic. Smarter Resolution.',
     heroSubtitle: 'A unified platform connecting citizens with municipal services. Powered by AI-assisted triage, GPS-verified location, duplicate detection, and real-time field crew dispatch.',
-    heroReportCta: 'Report an Issue',
-    heroTrackCta: 'Track My Complaints',
-    totalComplaints: 'Total Issues',
+    heroReportCta: 'Raise a Complaint',
+    heroTrackCta: 'Track a Complaint',
+    totalComplaints: 'Total Complaints',
     resolved: 'Resolved',
     inProgress: 'In Progress',
     slaHours: 'Resolution SLA',
-    recentIssues: 'Recent Issues',
+    recentIssues: 'Recent Civic Grievances',
     viewAll: 'View All',
   },
 
+  ta: {
+    brandTitle: 'ஸ்மார்ட் சிவிக்',
+    brandSubtitle: 'குடிமை வளர்ச்சி மற்றும் புகார் தீர்வு தளம்',
+    govtName: 'ஸ்மார்ட் சிவிக் தளம்',
+    corpName: 'ஸ்மார்ட் சிவிக் மாநகராட்சி சேவைகள்',
+    deptName: 'நகராட்சி நிர்வாகம் மற்றும் குடிமை குறைதீர்ப்பு பிரிவு',
+    navOverview: 'முகப்பு',
+    navReport: 'புகார் அளிக்க',
+    navMyReports: 'எனது புகார்கள்',
+    navComplaints: 'புகார்கள்',
+    navServices: 'ஸ்மார்ட் சேவைகள்',
+    navMap: 'வரைபடம் (GIS)',
+    navAuthority: 'அதிகாரி தளம்',
+    navDepartments: 'துறைகள்',
+    navAnalytics: 'புள்ளிவிவரங்கள்',
+    navWorker: 'களப்பணியாளர் தளம்',
+    navOfficial: 'துறை அதிகாரி தளம்',
+    navAdmin: 'நிர்வாக தளம்',
+    switchUserRole: 'பயனர் மாற்றம்',
+    resetSeed: 'தரவு மீட்டமை',
+
+    reportTitle: 'குடிமை புகார் பதிவு (Raise a Complaint)',
+    reportSubtitle: 'AI சரிபார்ப்பு மற்றும் துறைவாரியான உடனடி நடவடிக்கை',
+    testSuiteTitle: 'மாதிரி புகார் சோதனைகள்',
+    testSuiteDesc: 'AI சரிபார்ப்பு மற்றும் துறை ஒதுக்கீட்டை சோதிக்க மாதிரி புகாரை தேர்ந்தெடுக்கவும்.',
+    fieldTitle: 'புகார் தலைப்பு',
+    fieldTitlePlaceholder: 'எ.கா: அண்ணா நகர் 2வது நிழற்சாலையில் பெரிய சாலை பள்ளம்',
+    fieldDesc: 'விரிவான விளக்கம்',
+    fieldDescPlaceholder: 'சிக்கலின் அளவு, பொதுமக்களுக்கு ஏற்படும் பாதிப்பு மற்றும் விவரங்களை குறிப்பிடவும்...',
+    fieldWard: 'வார்டு / மண்டலம்',
+    fieldSeverity: 'தீவிரத்தன்மை',
+    fieldAddress: 'முகவரி / தெரு பெயர்',
+    fieldAddressPlaceholder: 'எ.கா: அண்ணா நகர் ரவுண்டானா அருகில், சென்னை',
+    fieldLandmark: 'அருகிலுள்ள அடையாளம் (Landmark)',
+    fieldLandmarkPlaceholder: 'எ.கா: மெட்ரோ ரயில் நிலையம் எதிரில்',
+    fieldPhotos: 'ஆதார புகைப்படங்கள் / ஆவணங்கள்',
+    addPhotoBtn: 'புகைப்படம் சேர்க்க',
+    verifyAiBtn: 'AI மூலம் சரிபார்க்க',
+    verifyingBtn: 'சரிபார்க்கப்படுகிறது...',
+    submitComplaintBtn: 'புகாரை சமர்ப்பிக்கவும்',
+    submittingBtn: 'சமர்ப்பிக்கப்படுகிறது...',
+    photoTip: 'புகைப்பட ஆதாரம் கள ஆய்வை விரைவுபடுத்த உதவும்',
+    attachSamplePothole: 'மாதிரி சாலை பள்ளம் புகைப்படம்',
+
+    sevLow: 'குறைவு (Low)',
+    sevMedium: 'நடுத்தரம் (Medium)',
+    sevHigh: 'அதிகம் (High)',
+    sevCritical: 'மிக அவசரம் (Critical)',
+
+    verificationCardTitle: 'AI புகார் சரிபார்ப்பு மற்றும் துறை ஒதுக்கீடு',
+    verdictValid: 'செல்லுபடியாகும் (VALID)',
+    verdictInvalid: 'செல்லாதது (INVALID)',
+    verdictNeedsReview: 'ஆய்வு தேவை (NEEDS REVIEW)',
+    confidenceLabel: 'நம்பகத்தன்மை',
+    aiCategoryLabel: 'வகை',
+    aiPriorityLabel: 'முன்னுரிமை',
+    locationStatusLabel: 'இருப்பிட நிலை',
+    locationProvided: 'வழங்கப்பட்டுள்ளது',
+    locationMissing: 'இல்லை',
+    locationUnclear: 'தெளிவில்லை',
+    smartRoutingLabel: 'பரிந்துரைக்கப்பட்ட துறை',
+    rationaleLabel: 'சரிபார்ப்பு காரணம்',
+    recommendedActionLabel: 'பரிந்துரைக்கப்பட்ட நடவடிக்கை',
+    duplicateDetected: 'இதே போன்ற புகார் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது',
+    nonPretenceAdvisory: 'குடிமை உள்கட்டமைப்பு குறைகளை தீர்க்கும் தளம்.',
+    confirmSubmissionBtn: 'உறுதி செய்து சமர்ப்பிக்கவும்',
+    addLocationPrompt: 'சரியான முகவரியை சேர்க்கவும்',
+    addLocationPlaceholder: 'தெரு, வார்டு மற்றும் அடையாளத்தை உள்ளிடவும்...',
+    updateLocationBtn: 'இருப்பிடத்தை புதுப்பிக்கவும்',
+
+    photoAuthTitle: 'புகைப்பட உண்மைத்தன்மை ஆய்வு',
+    photoAuthSubtitle: 'புகைப்படம் உண்மையானதா என்பதை AI மூலம் ஆய்வு செய்கிறது',
+    testPhotosTitle: 'மாதிரி புகைப்படங்கள்',
+    testPhotoRealPothole: 'உண்மையான சாலை பள்ளம்',
+    testPhotoAiFake: 'AI உருவாக்கிய படம்',
+    testPhotoMismatched: 'பொருந்தாத படம்',
+    testPhotoLiveWire: 'மின்கம்பி பாதிப்பு',
+    testPhotoGarbage: 'குப்பை தேக்கம்',
+    authenticityScore: 'உண்மைத்தன்மை மதிப்பெண்',
+    aiLikelihood: 'AI சாத்தியக்கூறு',
+    fraudVerdictLabel: 'ஆய்வு முடிவு',
+    verdictAuthentic: 'உண்மையான கள புகைப்படம்',
+    verdictAiGenerated: 'AI உருவாக்கிய படம்',
+    verdictStockOrEdited: 'திருத்தப்பட்ட படம்',
+    verdictMismatched: 'பொருந்தாத படம்',
+    detectedVisualProblem: 'கண்டறியப்பட்ட சிக்கல்',
+    visualSeverity: 'தீவிரம்',
+    relevanceCheck: 'பொருத்தம்',
+    relevanceMatch: 'பொருந்துகிறது',
+    relevanceMismatch: 'பொருந்தவில்லை',
+    estimatedExtents: 'மதிப்பிடப்பட்ட அளவு',
+    detectedHazardsTitle: 'கண்டறியப்பட்ட அபாயங்கள்',
+    tamperIntegrityTitle: 'EXIF ஒருமைப்பாடு',
+    inspectPhotoBtn: 'புகைப்படத்தை ஆய்வு செய்',
+    aiPhotoWarningAlert: 'எச்சரிக்கை: சந்தேகத்திற்குரிய புகைப்படம் கண்டறியப்பட்டது.',
+
+    officialReportTitle: 'புகார் ஒப்புகை மற்றும் ஆய்வு அறிக்கை',
+    officialReportSubtitle: 'ஸ்மார்ட் சிவிக் குறைதீர்ப்பு ஆவணம்',
+    dossierRefNo: 'ஒப்புகை எண் (Ref No)',
+    grievanceDate: 'பதிவு செய்யப்பட்ட தேதி',
+    reportingCitizen: 'புகார்தாரர் பெயர்',
+    targetSla: 'இலக்கு தீர்வு நேரம் (SLA)',
+    inspectionChecklist: 'கள ஆய்வு பட்டியல்',
+    officerSignoff: 'அதிகாரி ஒப்புதல்',
+    printReportBtn: 'ஒப்புகை சீட்டை அச்சிடுக',
+    downloadDossierBtn: 'ஒப்புகை பதிவிறக்கம் (.JSON)',
+    viewOfficialReportBtn: 'ஒப்புகை & ஆய்வு அறிக்கை',
+    closeBtn: 'மூடுக',
+
+    trackerTitle: 'புகார் நிலை கண்காணிப்பு (Track Complaint)',
+    statusSubmitted: 'சமர்ப்பிக்கப்பட்டது',
+    statusVerified: 'சரிபார்க்கப்பட்டது',
+    statusAssigned: 'ஒதுக்கப்பட்டது',
+    statusInProgress: 'நடவடிக்கையில் உள்ளது',
+    statusResolved: 'தீர்க்கப்பட்டது',
+
+    heroTitle: 'ஸ்மார்ட் சிவிக். விரைவான தீர்வு.',
+    heroSubtitle: 'குடிமக்கள் தங்கள் பகுதி சாலை, குடிநீர், வடிகால், தெருவிளக்கு மற்றும் சுகாதார புகார்களை பதிவு செய்து, ஒப்புகை பெற்று, தீர்வு நிலையை நேரடியாக கண்காணிக்கும் ஒருங்கிணைந்த தளம்.',
+    heroReportCta: 'புகார் பதிவு செய்க',
+    heroTrackCta: 'புகார் நிலையை அறிய',
+    totalComplaints: 'மொத்த புகார்கள்',
+    resolved: 'தீர்க்கப்பட்டவை',
+    inProgress: 'நடவடிக்கையில் உள்ளவை',
+    slaHours: 'இலக்கு நேரம் (SLA)',
+    recentIssues: 'சமீபத்திய குடிமை புகார்கள்',
+    viewAll: 'அனைத்தையும் காண்க',
+  },
+
   te: {
-    brandTitle: 'సివిక్‌సెన్స్',
-    brandSubtitle: 'విజయనగరం నగరపాలక సంస్థ',
-    govtName: 'ఆంధ్ర ప్రదేశ్ ప్రభుత్వం',
-    corpName: 'విజయనగరం నగరపాలక సంస్థ',
-    deptName: 'పురపాలక పరిపాలన మరియు పట్టణాభివృద్ధి శాఖ (MA&UD)',
+    brandTitle: 'SMART CIVIC',
+    brandSubtitle: 'Smart Civic Resolution Platform',
+    govtName: 'Smart Civic Platform',
+    corpName: 'Smart Civic Municipal Services',
+    deptName: 'Civic Development & Grievance Redressal',
     navOverview: 'ముఖ్యాంశాలు',
     navReport: 'సమస్యను నివేదించండి',
     navMyReports: 'నా ఫిర్యాదులు',
@@ -523,20 +651,91 @@ const TRANSLATIONS: Record<Language, Translations> = {
   },
 };
 
+export type TranslateAccessor = Translations & ((key: keyof Translations | string) => string);
+
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: Translations;
+  t: TranslateAccessor;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 const STORAGE_KEY_LANG = 'Smart Civic_lang';
 
+const FALLBACK_LABELS: Record<string, Record<string, string>> = {
+  en: {
+    reportIssue: 'Raise a Complaint',
+    trackStatus: 'Track a Complaint',
+    myComplaints: 'My Complaints',
+    departments: 'Departments',
+    helpAndGuidelines: 'Help & Guidelines',
+    acknowledgementGenerated: 'Official Acknowledgement Generated',
+    uniqueComplaintId: 'Unique Grievance ID',
+    viewComplaint: 'View Complaint',
+    trackComplaintBtn: 'Track Complaint',
+    downloadAcknowledgement: 'Download Acknowledgement',
+    returnToDashboard: 'Return to Dashboard',
+    sectionCitizenDetails: 'Section A — Citizen Details',
+    sectionComplaintDetails: 'Section B — Complaint Details',
+    sectionLocationDetails: 'Section C — Location & GIS Pin',
+    sectionEvidence: 'Section D — Supporting Evidence',
+    sectionDeclaration: 'Section E — Citizen Declaration & Submission',
+    districtLabel: 'District',
+    subcategoryLabel: 'Subcategory',
+    supportingDocLabel: 'Supporting Document (PDF / Image)',
+    declarationText: 'I hereby declare that the grievance details, location coordinates, and supporting information provided above are true and accurate to the best of my knowledge.',
+    submitComplaint: 'Submit Civic Grievance',
+    statusSubmitted: 'Submitted',
+    statusUnderReview: 'Under Review',
+    statusAssignedOfficer: 'Assigned',
+    statusWorkPlanned: 'Work Planned',
+    statusInProgress: 'In Progress',
+    statusResolved: 'Resolved',
+    statusClosed: 'Closed',
+    statusReopened: 'Reopened',
+    appealComplaint: 'Appeal / Reopen Complaint',
+    provideFeedback: 'Rate & Provide Feedback',
+  },
+  ta: {
+    reportIssue: 'புதிய புகார் பதிவு',
+    trackStatus: 'புகார் நிலை கண்காணிப்பு',
+    myComplaints: 'எனது புகார்கள்',
+    departments: 'துறைகள்',
+    helpAndGuidelines: 'உதவி & வழிகாட்டுதல்கள்',
+    acknowledgementGenerated: 'அதிகாரப்பூர்வ ஒப்புகை சீட்டு உருவாக்கப்பட்டது',
+    uniqueComplaintId: 'தனித்துவமான புகார் எண்',
+    viewComplaint: 'புகாரைப் பார்க்க',
+    trackComplaintBtn: 'புகார் நிலை',
+    downloadAcknowledgement: 'ஒப்புகை சீட்டு பதிவிறக்கம்',
+    returnToDashboard: 'முகப்புக்குத் திரும்பு',
+    sectionCitizenDetails: 'பிரிவு A — குடிமக்கள் விவரங்கள்',
+    sectionComplaintDetails: 'பிரிவு B — புகார் விவரங்கள்',
+    sectionLocationDetails: 'பிரிவு C — இருப்பிட விவரங்கள் (GPS)',
+    sectionEvidence: 'பிரிவு D — புகைப்பட / ஆவண ஆதாரம்',
+    sectionDeclaration: 'பிரிவு E — உறுதிமொழி மற்றும் சமர்ப்பிப்பு',
+    districtLabel: 'மாவட்டம்',
+    subcategoryLabel: 'துணை வகை',
+    supportingDocLabel: 'ஆதார ஆவணம் (PDF / படம்)',
+    declarationText: 'மேலே அளிக்கப்பட்டுள்ள புகார் விவரங்கள் மற்றும் இருப்பிடத் தகவல்கள் அனைத்தும் உண்மையானவை என உறுதி கூறுகிறேன்.',
+    submitComplaint: 'புகாரை சமர்ப்பிக்கவும்',
+    statusSubmitted: 'சமர்ப்பிக்கப்பட்டது',
+    statusUnderReview: 'பரிசீலனையில்',
+    statusAssignedOfficer: 'ஒதுக்கப்பட்டது',
+    statusWorkPlanned: 'பணி திட்டமிடப்பட்டுள்ளது',
+    statusInProgress: 'பணி நடைபெறுகிறது',
+    statusResolved: 'தீர்வு காணப்பட்டது',
+    statusClosed: 'முடிக்கப்பட்டது',
+    statusReopened: 'மீண்டும் திறக்கப்பட்டது',
+    appealComplaint: 'மேல்முறையீடு / மீண்டும் திற',
+    provideFeedback: 'மதிப்பீடு & கருத்து அளிக்க',
+  },
+};
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_LANG) as Language;
-    if (saved === 'en' || saved === 'te' || saved === 'hi') {
+    if (saved === 'en' || saved === 'ta' || saved === 'te' || saved === 'hi') {
       return saved;
     }
     return 'en';
@@ -547,7 +746,20 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem(STORAGE_KEY_LANG, lang);
   };
 
-  const t = TRANSLATIONS[language];
+  const dict = TRANSLATIONS[language] || TRANSLATIONS.en;
+  const extraDict = FALLBACK_LABELS[language] || FALLBACK_LABELS.en;
+  const t = React.useMemo(() => {
+    const fn = (key: keyof Translations | string): string => {
+      return (
+        (dict as any)[key] ||
+        extraDict[key as string] ||
+        (TRANSLATIONS.en as any)[key] ||
+        FALLBACK_LABELS.en[key as string] ||
+        String(key)
+      );
+    };
+    return Object.assign(fn, dict, extraDict) as TranslateAccessor;
+  }, [dict, extraDict]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>

@@ -37,11 +37,12 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
 
   // Filtered users
   const filteredUsers = registeredUsers.filter((user) => {
+    const q = (searchTerm || '').toLowerCase();
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.name || '').toLowerCase().includes(q) ||
+      (user.email || '').toLowerCase().includes(q) ||
       (user.phone && user.phone.includes(searchTerm)) ||
-      (user.id && user.id.toLowerCase().includes(searchTerm.toLowerCase()));
+      (user.id && (user.id || '').toLowerCase().includes(q));
 
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesWard = wardFilter === 'all' || user.ward === wardFilter;
@@ -319,6 +320,17 @@ export const UserDatabaseView: React.FC<UserDatabaseViewProps> = ({ onSelectComp
                           <Shield className="w-3 h-3" />
                           <span>{getRoleDisplayName(user.role)}</span>
                         </span>
+                        {user.role !== 'citizen' && (
+                          <div className="mt-1">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase border ${
+                              user.dutyStatus === 'OFF_DUTY'
+                                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            }`}>
+                              {user.dutyStatus === 'OFF_DUTY' ? '⚪ OFF DUTY' : '🟢 ON DUTY'}
+                            </span>
+                          </div>
+                        )}
                         {user.department && (
                           <div className="text-[10px] text-slate-500 font-medium mt-1">
                             {user.department}

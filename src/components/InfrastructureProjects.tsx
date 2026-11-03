@@ -758,9 +758,9 @@ export const InfrastructureProjects: React.FC<InfrastructureProjectsProps> = ({ 
                           <span className="font-mono text-xs font-bold text-slate-400">M{idx + 1}</span>
                           <span className="font-bold text-slate-900 text-sm">{m.name}</span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            m.status === 'COMPLETED' || m.status === 'Completed'
+                            (m.status as string) === 'COMPLETED' || (m.status as string) === 'Completed'
                               ? 'bg-emerald-100 text-emerald-800'
-                              : m.status === 'IN_PROGRESS' || m.status === 'In Progress'
+                              : (m.status as string) === 'IN_PROGRESS' || (m.status as string) === 'In Progress'
                               ? 'bg-amber-100 text-amber-800'
                               : 'bg-slate-200 text-slate-700'
                           }`}>
@@ -1287,6 +1287,29 @@ export const InfrastructureProjects: React.FC<InfrastructureProjectsProps> = ({ 
                     placeholder="e.g. 2nd Avenue, from Roundtana to 12th Main Road"
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
                   />
+                </div>
+
+                {/* Interactive Map Picker for Project Pinning */}
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                      <MapPin className="w-4 h-4 text-red-600" />
+                      <span>Pick Project Location on Map (Click map to place RED PIN)</span>
+                    </label>
+                    <span className="text-[11px] font-mono text-slate-600">
+                      Coordinates: <strong className="text-slate-900">{form.lat?.toFixed(5)}, {form.lng?.toFixed(5)}</strong>
+                    </span>
+                  </div>
+                  <div className="h-52 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                    <LeafletMap
+                      center={[form.lat || DEFAULT_LAT, form.lng || DEFAULT_LNG]}
+                      zoom={14}
+                      height="208px"
+                      isPicker={true}
+                      selectedLocation={{ lat: form.lat || DEFAULT_LAT, lng: form.lng || DEFAULT_LNG }}
+                      onLocationSelect={(newLat, newLng) => setForm((prev) => ({ ...prev, lat: newLat, lng: newLng }))}
+                    />
+                  </div>
                 </div>
 
                 <div>

@@ -103,16 +103,17 @@ export const AuthorityDashboard: React.FC = () => {
 
   // Filter complaints
   const filtered = complaints.filter((c) => {
+    const q = (searchTerm || '').toLowerCase();
     const matchSearch =
-      c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.location.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.reportedBy.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (c.id || '').toLowerCase().includes(q) ||
+      (c.title || '').toLowerCase().includes(q) ||
+      (c.location?.address || '').toLowerCase().includes(q) ||
+      (c.reportedBy?.name || '').toLowerCase().includes(q);
 
     const matchStatus = statusFilter === 'All' || c.status === statusFilter;
     const matchPriority = priorityFilter === 'All' || c.priority === priorityFilter;
     const matchDept = departmentFilter === 'All' || c.department === departmentFilter;
-    const matchWard = wardFilter === 'All' || c.location.ward === wardFilter;
+    const matchWard = wardFilter === 'All' || c.location?.ward === wardFilter;
 
     return matchSearch && matchStatus && matchPriority && matchDept && matchWard;
   });

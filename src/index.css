@@ -1,11 +1,30 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Root color-scheme sync */
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
 /* Leaflet map adjustments */
 .leaflet-container {
   width: 100%;
   height: 100%;
   z-index: 10;
   font-family: inherit;
+}
+
+/* Dark mode leaflet map tiles enhancement */
+.dark .leaflet-tile {
+  filter: brightness(0.75) invert(1) contrast(2.2) hue-rotate(200deg) saturate(0.4) brightness(0.85);
+}
+.dark .leaflet-container {
+  background: #090d16;
 }
 
 /* Custom scrollbar for modern UI */

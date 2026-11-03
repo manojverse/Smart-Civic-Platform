@@ -90,6 +90,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ─── OFFICER TASKS ─────────────────────────────────────────────
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
+
     // ─── NOTIFICATIONS ─────────────────────────────────────────────
     match /notifications/{notifId} {
       allow read: if isSignedIn();

@@ -21,20 +21,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
   const { t } = useLanguage();
 
   const getPortalLabel = () => {
-    if (currentUser.role === 'worker') return 'Worker';
-    if (currentUser.role === 'higher_official') return 'Official';
-    if (currentUser.role === 'admin') return 'Admin';
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') return 'Admin';
+    if (['worker', 'field_officer', 'higher_official', 'department_officer', 'staff', 'officer'].includes(currentUser.role)) return 'Officer';
     return t.navAuthority;
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1 shadow-lg pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1 shadow-lg pb-safe transition-colors duration-150">
       <div className="flex items-center justify-around">
         {/* Home */}
         <button
           onClick={() => setCurrentTab('home')}
           className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
-            currentTab === 'home' ? 'text-indigo-600 font-bold' : 'text-slate-500'
+            currentTab === 'home' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
           aria-label="Home"
         >
@@ -46,7 +45,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
         <button
           onClick={() => setCurrentTab('services')}
           className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
-            currentTab === 'services' ? 'text-indigo-600 font-bold' : 'text-slate-500'
+            currentTab === 'services' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
           aria-label="Services"
         >
@@ -57,7 +56,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
         {/* Report (Hero Action) */}
         <button
           onClick={() => setCurrentTab('report')}
-          className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white w-14 h-14 rounded-full shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition-all shrink-0"
+          className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-slate-900 hover:scale-105 active:scale-95 transition-all shrink-0"
           aria-label="Report Issue"
         >
           <PlusCircle className="w-6 h-6" />
@@ -69,8 +68,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, setCurrentTab 
           onClick={() => setCurrentTab('my-complaints')}
           className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors ${
             currentTab === 'my-complaints' || currentTab === 'tracking'
-              ? 'text-indigo-600 font-bold'
-              : 'text-slate-500'
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
           aria-label="Track Complaints"
         >

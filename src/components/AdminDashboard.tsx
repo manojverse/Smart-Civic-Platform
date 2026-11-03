@@ -47,6 +47,9 @@ import { DepartmentManagement } from './DepartmentManagement';
 import { InfrastructureProjects } from './InfrastructureProjects';
 import { CivicMapView } from './CivicMapView';
 import { CivicAnalytics } from './CivicAnalytics';
+import { OfficerTaskManager } from './OfficerTaskManager';
+import { OfficerOperationalUpdateModal } from './OfficerOperationalUpdateModal';
+import { ZoneConstituencyAnalytics } from './ZoneConstituencyAnalytics';
 import { FIELD_OFFICERS } from '../data/seedData';
 
 export const AdminDashboard: React.FC = () => {
@@ -54,35 +57,74 @@ export const AdminDashboard: React.FC = () => {
     currentUser,
     registeredUsers,
     approveUser,
+    toggleUserActiveStatus,
     auditLogs,
     complaints,
+    infrastructureProjects,
     setSelectedComplaint,
+    updateComplaintStatus,
+    updateComplaintDepartment,
+    getAllowedNextStatuses,
+    assignOfficer,
     broadcastAnnouncement,
     announcements,
+    addAuditLog,
   } = useCivic();
 
   const [adminTab, setAdminTab] = useState<
     | 'ai_governance'
     | 'users'
+    | 'roles'
     | 'officers'
     | 'complaints'
     | 'departments'
     | 'projects'
+    | 'tasks'
+    | 'zones'
     | 'map'
     | 'analytics'
     | 'sla'
     | 'smart_insights'
     | 'notifications'
     | 'audit'
+    | 'settings'
   >('ai_governance');
-  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'citizen' | 'worker' | 'higher_official'>('all');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'citizen' | 'department_officer' | 'admin'>('all');
   const [auditSearch, setAuditSearch] = useState('');
 
-  // Announcement state
+  // Custom added/edited users & announcements state persisted in localStorage
+  const [customUsers, setCustomUsers] = useState<User[]>(() => {
+    try {
+      const s = localStorage.getItem('Smart Civic_admin_custom_users_v1');
+      return s ? JSON.parse(s) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [roleOverrides, setRoleOverrides] = useState<Record<string, { role?: string; department?: MunicipalDepartment; name?: string; isActive?: boolean }>>(() => {
+    try {
+      const s = localStorage.getItem('Smart Civic_admin_user_overrides_v1');
+      return s ? JSON.parse(s) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormName, setUserFormName] = useState('');
+  const [userFormEmail, setUserFormEmail] = useState('');
+  const [userFormPhone, setUserFormPhone] = useState('');
+  const [userFormRole, setUserFormRole] = useState<'citizen' | 'department_officer' | 'admin'>('citizen');
+  const [userFormDept, setUserFormDept] = useState<MunicipalDepartment>('Public Works Department (PWD)');
+
+  // Announcement state & local overrides for edit/delete
   const [annTitle, setAnnTitle] = useState('');
   const [annMessage, setAnnMessage] = useState('');
   const [annDept, setAnnDept] = useState<MunicipalDepartment>('Public Works Department (PWD)');
   const [annPriority, setAnnPriority] = useState<'normal' | 'urgent'>('normal');
+  const [deletedAnnIds, setDeletedAnnIds] = useState<string[]>([]);
+  const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
+  const [editedAnnouncements, setEditedAnnouncements] = useState<Record<string, { title: string; message: string; department: MunicipalDepartment; priority: 'normal' | 'urgent' }>>({});
 
   // AI Verification & Smart Routing Filters
   const { t } = useLanguage();
@@ -96,8 +138,65 @@ export const AdminDashboard: React.FC = () => {
   const [complaintSearch, setComplaintSearch] = useState('');
   const [inspectComplaint, setInspectComplaint] = useState<Complaint | null>(null);
 
-  // 7 Core Administrative Metrics
+  // Combine registeredUsers and customUsers with overrides
+  const allManagedUsers = [
+    ...registeredUsers.map((u) => {
+      const ov = roleOverrides[u.id] || {};
+      return {
+        ...u,
+        name: ov.name ?? u.name,
+        role: (ov.role ?? u.role) as any,
+        department: ov.department ?? u.department,
+        isActive: ov.isActive !== undefined ? ov.isActive : (u as any).isActive !== false,
+      };
+    }),
+    ...customUsers.map((u) => {
+      const ov = roleOverrides[u.id] || {};
+      return {
+        ...u,
+        name: ov.name ?? u.name,
+        role: (ov.role ?? u.role) as any,
+        department: ov.department ?? u.department,
+        approvalStatus: 'approved' as const,
+        isActive: ov.isActive !== undefined ? ov.isActive : true,
+      };
+    }),
+  ];
+
+  // 16 Dynamic Admin KPI Metrics
+  const totalUsersCount = allManagedUsers.length;
+  const totalCitizensCount = allManagedUsers.filter((u) => u.role === 'citizen').length;
+  const totalDeptOfficersCount = allManagedUsers.filter(
+    (u) =>
+      u.role === 'department_officer' ||
+      u.role === 'officer' ||
+      u.role === 'field_officer' ||
+      u.role === 'worker' ||
+      u.role === 'higher_official'
+  ).length;
+
   const totalComplaints = complaints.length;
+  const submittedComplaintsCount = complaints.filter((c) => c.status === 'Submitted').length;
+  const underReviewComplaintsCount = complaints.filter((c) => c.status === 'Under Review').length;
+  const assignedComplaintsCount = complaints.filter((c) => c.status === 'Assigned').length;
+  const workPlannedComplaintsCount = complaints.filter((c) => c.status === 'Work Planned').length;
+  const inProgressComplaintsCount = complaints.filter((c) => c.status === 'In Progress').length;
+  const resolvedComplaintsCount = complaints.filter((c) => c.status === 'Resolved').length;
+  const closedComplaintsCount = complaints.filter((c) => c.status === 'Closed').length;
+
+  const totalProjectsCount = infrastructureProjects.length;
+  const activeProjectsCount = infrastructureProjects.filter(
+    (p) =>
+      String(p.status).toUpperCase() === 'IN_PROGRESS' ||
+      String(p.status) === 'In Progress' ||
+      String(p.status).toUpperCase() === 'PLANNED' ||
+      String(p.status).toUpperCase() === 'APPROVED'
+  ).length;
+  const completedProjectsCount = infrastructureProjects.filter((p) => p.status === 'Completed').length;
+  const delayedProjectsCount = infrastructureProjects.filter((p) => p.status === 'Delayed').length;
+  const totalDepartmentsCount = 7;
+
+  // 7 Core Administrative AI Metrics
   const validComplaints = complaints.filter(
     (c) => c.aiValidity === 'VALID' || (!c.aiValidity && c.status !== 'Rejected')
   ).length;
@@ -178,13 +277,22 @@ export const AdminDashboard: React.FC = () => {
     return true;
   });
 
-  // Filtering users
-  const filteredUsers = registeredUsers.filter((u) => {
+  // Filtering users for the 3-portal system
+  const filteredUsers = allManagedUsers.filter((u) => {
     if (userRoleFilter === 'all') return true;
+    if (userRoleFilter === 'department_officer') {
+      return (
+        u.role === 'department_officer' ||
+        u.role === 'officer' ||
+        u.role === 'field_officer' ||
+        u.role === 'worker' ||
+        u.role === 'higher_official'
+      );
+    }
     return u.role === userRoleFilter;
   });
 
-  const pendingApprovals = registeredUsers.filter((u) => u.approvalStatus === 'pending');
+  const pendingApprovals = allManagedUsers.filter((u) => u.approvalStatus === 'pending');
 
   // Filtering audit logs
   const filteredAuditLogs = auditLogs.filter((log) => {
@@ -336,7 +444,31 @@ export const AdminDashboard: React.FC = () => {
           }`}
         >
           <HardHat className="w-3.5 h-3.5" />
-          <span>Infrastructure Projects</span>
+          <span>Projects</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('tasks')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'tasks'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 text-blue-300" />
+          <span>Tasks</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('zones')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            adminTab === 'zones'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5 text-purple-300" />
+          <span>Zones &amp; Constituencies</span>
         </button>
 
         <button
@@ -415,7 +547,85 @@ export const AdminDashboard: React.FC = () => {
       {/* Tab 0: AI Verification & Smart Routing Dashboard */}
       {adminTab === 'ai_governance' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Executive Metrics: 7 Core Cards */}
+          {/* 16 Dynamic System-Wide Admin KPI Cards */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                Real-Time Municipal Platform KPIs (Derived from Live Records)
+              </h3>
+              <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+                16 System Metrics
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="text-[10px] font-bold text-slate-500 uppercase">Total Users</div>
+                <div className="text-xl font-black text-slate-900 mt-0.5 font-mono">{totalUsersCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
+                <div className="text-[10px] font-bold text-blue-700 uppercase">Total Citizens</div>
+                <div className="text-xl font-black text-blue-900 mt-0.5 font-mono">{totalCitizensCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-200">
+                <div className="text-[10px] font-bold text-indigo-700 uppercase">Dept Officers</div>
+                <div className="text-xl font-black text-indigo-900 mt-0.5 font-mono">{totalDeptOfficersCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200">
+                <div className="text-[10px] font-bold text-purple-700 uppercase">Departments</div>
+                <div className="text-xl font-black text-purple-900 mt-0.5 font-mono">{totalDepartmentsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-100/80 border border-slate-300">
+                <div className="text-[10px] font-bold text-slate-700 uppercase">Total Complaints</div>
+                <div className="text-xl font-black text-slate-950 mt-0.5 font-mono">{totalComplaints}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-sky-50/60 border border-sky-200">
+                <div className="text-[10px] font-bold text-sky-700 uppercase">Submitted</div>
+                <div className="text-xl font-black text-sky-900 mt-0.5 font-mono">{submittedComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200">
+                <div className="text-[10px] font-bold text-amber-700 uppercase">Under Review</div>
+                <div className="text-xl font-black text-amber-900 mt-0.5 font-mono">{underReviewComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-yellow-50/60 border border-yellow-200">
+                <div className="text-[10px] font-bold text-yellow-800 uppercase">Assigned</div>
+                <div className="text-xl font-black text-yellow-950 mt-0.5 font-mono">{assignedComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-cyan-50/60 border border-cyan-200">
+                <div className="text-[10px] font-bold text-cyan-800 uppercase">Work Planned</div>
+                <div className="text-xl font-black text-cyan-950 mt-0.5 font-mono">{workPlannedComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-orange-50/60 border border-orange-200">
+                <div className="text-[10px] font-bold text-orange-800 uppercase">In Progress</div>
+                <div className="text-xl font-black text-orange-950 mt-0.5 font-mono">{inProgressComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
+                <div className="text-[10px] font-bold text-emerald-800 uppercase">Resolved</div>
+                <div className="text-xl font-black text-emerald-950 mt-0.5 font-mono">{resolvedComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-teal-50/60 border border-teal-200">
+                <div className="text-[10px] font-bold text-teal-800 uppercase">Closed</div>
+                <div className="text-xl font-black text-teal-950 mt-0.5 font-mono">{closedComplaintsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="text-[10px] font-bold text-slate-600 uppercase">Total Projects</div>
+                <div className="text-xl font-black text-slate-900 mt-0.5 font-mono">{totalProjectsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
+                <div className="text-[10px] font-bold text-blue-700 uppercase">Active Projects</div>
+                <div className="text-xl font-black text-blue-900 mt-0.5 font-mono">{activeProjectsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
+                <div className="text-[10px] font-bold text-emerald-700 uppercase">Completed Proj</div>
+                <div className="text-xl font-black text-emerald-900 mt-0.5 font-mono">{completedProjectsCount}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200">
+                <div className="text-[10px] font-bold text-rose-700 uppercase">Delayed Proj</div>
+                <div className="text-xl font-black text-rose-900 mt-0.5 font-mono">{delayedProjectsCount}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Executive AI Metrics: 7 Core Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             {/* Total Complaints */}
             <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
@@ -664,10 +874,12 @@ export const AdminDashboard: React.FC = () => {
                   <option value="all">All Statuses</option>
                   <option value="Submitted">Submitted</option>
                   <option value="Under Review">Under Review</option>
-                  <option value="Verified">Verified</option>
                   <option value="Assigned">Assigned</option>
+                  <option value="Work Planned">Work Planned</option>
                   <option value="In Progress">In Progress</option>
                   <option value="Resolved">Resolved</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Closed">Closed</option>
                   <option value="Rejected">Rejected</option>
                 </select>
               </div>
@@ -1011,26 +1223,44 @@ export const AdminDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Municipal User & Staff Directory</h2>
+                <h2 className="text-base font-bold text-slate-900">Municipal User &amp; Staff Directory ({allManagedUsers.length})</h2>
                 <p className="text-xs text-slate-500">
-                  Manage role permissions and verify municipal staff credentials for operational portals.
+                  Manage Citizen, Department Officer, and Administrator accounts across the three-portal system.
                 </p>
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                {(['all', 'worker', 'higher_official', 'citizen'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setUserRoleFilter(r)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
-                      userRoleFilter === r
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {r === 'all' ? 'All' : getRoleDisplayName(r)}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  {(['all', 'citizen', 'department_officer', 'admin'] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setUserRoleFilter(r)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                        userRoleFilter === r
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {r === 'all' ? 'All Users' : getRoleDisplayName(r)}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingUserId(null);
+                    setUserFormName('');
+                    setUserFormEmail('');
+                    setUserFormPhone('');
+                    setUserFormRole('department_officer');
+                    setUserFormDept('Public Works Department (PWD)');
+                    setShowUserModal(true);
+                  }}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                >
+                  + Add User / Officer
+                </button>
               </div>
             </div>
 
@@ -1038,6 +1268,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="divide-y divide-slate-100">
               {filteredUsers.map((user) => {
                 const isPending = user.approvalStatus === 'pending';
+                const isActive = user.isActive !== false;
                 return (
                   <div key={user.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -1045,17 +1276,15 @@ export const AdminDashboard: React.FC = () => {
                         {user.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h4 className="text-sm font-bold text-slate-900">{user.name}</h4>
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                               user.role === 'admin'
                                 ? 'bg-purple-100 text-purple-700'
-                                : user.role === 'higher_official'
-                                ? 'bg-indigo-100 text-indigo-700'
-                                : user.role === 'worker'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-slate-100 text-slate-700'
+                                : user.role === 'citizen'
+                                ? 'bg-slate-100 text-slate-700'
+                                : 'bg-indigo-100 text-indigo-700'
                             }`}
                           >
                             {getRoleDisplayName(user.role)}
@@ -1063,12 +1292,14 @@ export const AdminDashboard: React.FC = () => {
 
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isPending
+                              !isActive
+                                ? 'bg-rose-100 text-rose-800'
+                                : isPending
                                 ? 'bg-amber-100 text-amber-800'
                                 : 'bg-emerald-100 text-emerald-800'
                             }`}
                           >
-                            {isPending ? 'Pending Approval' : 'Approved Active'}
+                            {!isActive ? 'Deactivated' : isPending ? 'Pending Approval' : 'Active Account'}
                           </span>
                         </div>
 
@@ -1094,27 +1325,222 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {isPending ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isPending && (
                         <button
                           onClick={() => approveUser(user.id)}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
                         >
-                          <UserCheck className="w-4 h-4" />
-                          Approve Staff Access
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Approve Access
                         </button>
-                      ) : (
-                        <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 px-3 py-1 bg-emerald-50 rounded-lg">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Active
-                        </span>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingUserId(user.id);
+                          setUserFormName(user.name);
+                          setUserFormEmail(user.email);
+                          setUserFormPhone(user.phone || '');
+                          setUserFormRole(
+                            user.role === 'admin'
+                              ? 'admin'
+                              : user.role === 'citizen'
+                              ? 'citizen'
+                              : 'department_officer'
+                          );
+                          setUserFormDept((user.department as MunicipalDepartment) || 'Public Works Department (PWD)');
+                          setShowUserModal(true);
+                        }}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                      >
+                        Edit / Role
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleUserActiveStatus(user.id);
+                          const nextActive = !isActive;
+                          const nextOverrides = {
+                            ...roleOverrides,
+                            [user.id]: {
+                              ...(roleOverrides[user.id] || {}),
+                              isActive: nextActive,
+                            },
+                          };
+                          setRoleOverrides(nextOverrides);
+                          try {
+                            localStorage.setItem('Smart Civic_admin_user_overrides_v1', JSON.stringify(nextOverrides));
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                          isActive
+                            ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        }`}
+                      >
+                        {isActive ? 'Deactivate' : 'Activate'}
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Add / Edit User Modal */}
+          {showUserModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 mb-1">
+                  {editingUserId ? 'Edit User & Portal Role' : 'Create Municipal Platform User'}
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                  Assign Citizen, Department Officer, or Admin permissions.
+                </p>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!userFormName.trim()) return;
+                    if (editingUserId) {
+                      const nextOverrides = {
+                        ...roleOverrides,
+                        [editingUserId]: {
+                          ...(roleOverrides[editingUserId] || {}),
+                          name: userFormName.trim(),
+                          role: userFormRole,
+                          department: userFormRole === 'department_officer' ? userFormDept : undefined,
+                        },
+                      };
+                      setRoleOverrides(nextOverrides);
+                      try {
+                        localStorage.setItem('Smart Civic_admin_user_overrides_v1', JSON.stringify(nextOverrides));
+                      } catch {
+                        // ignore
+                      }
+                      addAuditLog({
+                        action: 'STATUS_UPDATED',
+                        user: currentUser.name,
+                        role: currentUser.role,
+                        userName: currentUser.name,
+                        userRole: currentUser.role,
+                        details: `Updated user ${userFormName.trim()} to role ${getRoleDisplayName(userFormRole)}`,
+                      });
+                    } else {
+                      const newUser: User = {
+                        id: `USR-${Date.now()}`,
+                        name: userFormName.trim(),
+                        email: userFormEmail.trim() || `user${Date.now()}@smartcivic.gov.in`,
+                        phone: userFormPhone.trim() || '+91 98400 00000',
+                        role: userFormRole,
+                        department: userFormRole === 'department_officer' ? userFormDept : undefined,
+                        approvalStatus: 'approved',
+                      };
+                      const nextCustom = [newUser, ...customUsers];
+                      setCustomUsers(nextCustom);
+                      try {
+                        localStorage.setItem('Smart Civic_admin_custom_users_v1', JSON.stringify(nextCustom));
+                      } catch {
+                        // ignore
+                      }
+                      addAuditLog({
+                        action: 'USER_APPROVED',
+                        user: currentUser.name,
+                        role: currentUser.role,
+                        userName: currentUser.name,
+                        userRole: currentUser.role,
+                        details: `Created new ${getRoleDisplayName(userFormRole)} account for ${newUser.name}`,
+                      });
+                    }
+                    setShowUserModal(false);
+                  }}
+                  className="space-y-3.5"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={userFormName}
+                      onChange={(e) => setUserFormName(e.target.value)}
+                      placeholder="e.g. Er. Karthik Subramanian"
+                      className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={userFormEmail}
+                      onChange={(e) => setUserFormEmail(e.target.value)}
+                      placeholder="officer@smartcivic.gov.in"
+                      className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      value={userFormPhone}
+                      onChange={(e) => setUserFormPhone(e.target.value)}
+                      placeholder="+91 98401 12345"
+                      className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Portal Role</label>
+                    <select
+                      value={userFormRole}
+                      onChange={(e) => setUserFormRole(e.target.value as any)}
+                      className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                    >
+                      <option value="citizen">Citizen</option>
+                      <option value="department_officer">Department Officer</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  {userFormRole === 'department_officer' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Department</label>
+                      <select
+                        value={userFormDept}
+                        onChange={(e) => setUserFormDept(e.target.value as MunicipalDepartment)}
+                        className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value="Public Works Department (PWD)">Public Works Department (PWD)</option>
+                        <option value="Solid Waste Management">Solid Waste Management</option>
+                        <option value="Water Supply & Sewerage Board">Water Supply & Sewerage Board</option>
+                        <option value="Electricity & Streetlighting">Electricity & Streetlighting</option>
+                        <option value="Traffic & Transport Planning">Traffic & Transport Planning</option>
+                        <option value="Public Health & Sanitation">Public Health & Sanitation</option>
+                        <option value="Horticulture & Parks">Horticulture & Parks</option>
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowUserModal(false)}
+                      className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs"
+                    >
+                      {editingUserId ? 'Save Changes' : 'Create User'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1212,80 +1638,130 @@ export const AdminDashboard: React.FC = () => {
       {/* Tab 3: Citywide Complaints */}
       {adminTab === 'complaints' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Citywide Real-Time Grievance Feed</h2>
-            <p className="text-xs text-slate-500">
-              Live monitoring of all citizen issues across all departments and wards.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Citywide Real-Time Grievance Feed &amp; Department Dispatch</h2>
+              <p className="text-xs text-slate-500">
+                Live monitoring, cross-departmental reassignment, and status lifecycle governance across all wards.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              {complaints.length} Total Grievances
+            </span>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {complaints.map((c) => (
-              <div key={c.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                      {c.id}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        c.priority === 'P1-Critical'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
+            {complaints.map((c) => {
+              const allowedNext = getAllowedNextStatuses(c.status);
+              return (
+                <div key={c.id} className="py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                        {c.id}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          c.priority === 'P1-Critical'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {c.priority}
+                      </span>
+                      <span className="text-xs text-slate-500 font-semibold">{c.category}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {c.status}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900">{c.title}</h4>
+                    <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
+                      <span>{c.location.address}</span>
+                      <span>•</span>
+                      <span>Ward: {c.location.ward}</span>
+                      <span>•</span>
+                      <span className="font-medium text-slate-700">Citizen: {c.reportedBy || 'Anonymous'}</span>
+                      {c.photoAnalysis && (
+                        <>
+                          <span>•</span>
+                          <span
+                            className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${
+                              c.photoAnalysis.verdict === 'GENUINE_EVIDENCE'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : c.photoAnalysis.verdict === 'AI_GENERATED_DETECTED'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            Photo: {c.photoAnalysis.verdict.replace(/_/g, ' ')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Admin Department Reassignment */}
+                    <select
+                      value={c.department}
+                      onChange={(e) => updateComplaintDepartment(c.id, e.target.value as MunicipalDepartment)}
+                      className="text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      title="Reassign Municipal Department"
                     >
-                      {c.priority}
-                    </span>
-                    <span className="text-xs text-slate-500 font-semibold">{c.category}</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900">{c.title}</h4>
-                  <div className="text-xs text-slate-500 flex items-center gap-2">
-                    <span>{c.location.address}</span>
-                    <span>•</span>
-                    <span>Ward: {c.location.ward}</span>
-                    <span>•</span>
-                    <span>Dept: {c.department}</span>
-                    {c.photoAnalysis && (
-                      <>
-                        <span>•</span>
-                        <span
-                          className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${
-                            c.photoAnalysis.verdict === 'GENUINE_EVIDENCE'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : c.photoAnalysis.verdict === 'AI_GENERATED_DETECTED'
-                              ? 'bg-rose-100 text-rose-700'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}
-                        >
-                          Photo: {c.photoAnalysis.verdict.replace(/_/g, ' ')}
-                        </span>
-                      </>
-                    )}
+                      <option value="Public Works Department (PWD)">Public Works Department (PWD)</option>
+                      <option value="Water Supply & Sewerage Board">Water Supply &amp; Sewerage Board</option>
+                      <option value="Electricity & Streetlighting">Electricity &amp; Streetlighting</option>
+                      <option value="Solid Waste Management">Solid Waste Management</option>
+                      <option value="Traffic & Transport Planning">Traffic &amp; Transport Planning</option>
+                      <option value="Public Health & Sanitation">Public Health &amp; Sanitation</option>
+                      <option value="Horticulture & Parks">Horticulture &amp; Parks</option>
+                    </select>
+
+                    {/* Admin Ordered Status Lifecycle Selector */}
+                    <select
+                      value={c.status}
+                      onChange={(e) =>
+                        updateComplaintStatus(
+                          c.id,
+                          e.target.value as Complaint['status'],
+                          `Admin updated status to ${e.target.value}`
+                        )
+                      }
+                      className="text-xs px-2.5 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/50 text-indigo-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      title="Update Complaint Status"
+                    >
+                      <option value={c.status}>{c.status} (Current)</option>
+                      {allowedNext
+                        .filter((st) => st !== c.status)
+                        .map((st) => (
+                          <option key={st} value={st}>
+                            → {st}
+                          </option>
+                        ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedReportComplaint(c);
+                        setIsReportModalOpen(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold border border-indigo-200 transition-colors"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5" />
+                      <span>Inspection Dossier</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedComplaint(c)}
+                      className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition-colors"
+                    >
+                      View Timeline
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedReportComplaint(c);
-                      setIsReportModalOpen(true);
-                    }}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold border border-indigo-200 transition-colors"
-                  >
-                    <FileCheck2 className="w-3.5 h-3.5" />
-                    <span>Inspection Dossier</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedComplaint(c)}
-                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition-colors"
-                  >
-                    View Timeline
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1314,7 +1790,7 @@ export const AdminDashboard: React.FC = () => {
                 const activeAssignedCount = complaints.filter(
                   (c) =>
                     c.assignedOfficer?.badgeNumber === officer.badgeNumber ||
-                    c.assignedOfficer?.name.toLowerCase() === officer.name.toLowerCase()
+                    (c.assignedOfficer?.name && (c.assignedOfficer.name || '').toLowerCase() === (officer.name || '').toLowerCase())
                 ).filter((c) => c.status !== 'Resolved' && c.status !== 'Closed').length;
 
                 return (
@@ -1334,9 +1810,15 @@ export const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                        Active
-                      </span>
+                      {officer.dutyStatus === 'OFF_DUTY' ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                          OFF DUTY
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">
+                          ON DUTY
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 text-xs text-slate-600">
@@ -1561,12 +2043,25 @@ export const AdminDashboard: React.FC = () => {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!annTitle.trim() || !annMessage.trim()) return;
-                broadcastAnnouncement({
-                  title: annTitle.trim(),
-                  message: annMessage.trim(),
-                  department: annDept,
-                  priority: annPriority,
-                });
+                if (editingAnnId) {
+                  setEditedAnnouncements((prev) => ({
+                    ...prev,
+                    [editingAnnId]: {
+                      title: annTitle.trim(),
+                      message: annMessage.trim(),
+                      department: annDept,
+                      priority: annPriority,
+                    },
+                  }));
+                  setEditingAnnId(null);
+                } else {
+                  broadcastAnnouncement({
+                    title: annTitle.trim(),
+                    message: annMessage.trim(),
+                    department: annDept,
+                    priority: annPriority,
+                  });
+                }
                 setAnnTitle('');
                 setAnnMessage('');
               }}
@@ -1612,7 +2107,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <option value="Public Works Department (PWD)">Public Works Department (PWD)</option>
                     <option value="Water Supply & Sewerage Board">Water Supply & Sewerage Board</option>
-                    <option value="Electricity & Street Lighting">Electricity & Street Lighting</option>
+                    <option value="Electricity & Streetlighting">Electricity & Streetlighting</option>
                     <option value="Solid Waste Management">Solid Waste Management</option>
                     <option value="Public Health & Sanitation">Public Health & Sanitation</option>
                   </select>
@@ -1633,40 +2128,173 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Publish Municipal Broadcast</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{editingAnnId ? 'Save Advisory Changes' : 'Publish Municipal Broadcast'}</span>
+                </button>
+                {editingAnnId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAnnId(null);
+                      setAnnTitle('');
+                      setAnnMessage('');
+                    }}
+                    className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </form>
 
             {/* Existing Announcements List */}
             <div className="space-y-3 pt-4 border-t border-slate-100">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Published Municipal Advisories ({announcements.length})
+                Published Municipal Advisories ({announcements.filter((a) => !deletedAnnIds.includes(a.id)).length})
               </h3>
               <div className="divide-y divide-slate-100">
-                {announcements.map((ann) => (
-                  <div key={ann.id} className="py-3 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        ann.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {ann.priority.toUpperCase()}
-                      </span>
-                      <h4 className="font-bold text-slate-900 text-xs">{ann.title}</h4>
-                      <span className="text-[10px] text-slate-400 ml-auto">
-                        {new Date(ann.timestamp).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600">{ann.message}</p>
-                    <div className="text-[10px] text-slate-400 font-medium">
-                      Department: {ann.department}
-                    </div>
-                  </div>
-                ))}
+                {announcements
+                  .filter((ann) => !deletedAnnIds.includes(ann.id))
+                  .map((rawAnn) => {
+                    const ann = editedAnnouncements[rawAnn.id]
+                      ? { ...rawAnn, ...editedAnnouncements[rawAnn.id] }
+                      : rawAnn;
+                    return (
+                      <div key={ann.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                ann.priority === 'urgent'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {ann.priority.toUpperCase()}
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-xs">{ann.title}</h4>
+                            <span className="text-[10px] text-slate-400">
+                              • {new Date(ann.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600">{ann.message}</p>
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            Department: {ann.department}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAnnId(ann.id);
+                              setAnnTitle(ann.title);
+                              setAnnMessage(ann.message);
+                              setAnnDept(ann.department as MunicipalDepartment);
+                              setAnnPriority(ann.priority === 'urgent' ? 'urgent' : 'normal');
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletedAnnIds((prev) => [...prev, ann.id])}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENDER TASKS TAB */}
+      {adminTab === 'tasks' && <OfficerTaskManager />}
+
+      {/* RENDER ZONES & CONSTITUENCIES TAB */}
+      {adminTab === 'zones' && <ZoneConstituencyAnalytics />}
+
+      {/* RENDER ROLES MANAGEMENT TAB */}
+      {adminTab === 'roles' && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-indigo-600" />
+                <span>Role &amp; Permission Access Control</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Configure three-portal access boundaries: Citizen (Public), Officer (Operational), Admin (Governance).
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200 space-y-2">
+              <span className="font-bold text-emerald-950 text-sm block">1. Citizen Portal</span>
+              <p className="text-slate-600 leading-relaxed">
+                Public residents can report complaints, track live timeline status, view public infrastructure projects, budget transparency, and zone development activity.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-emerald-800">Permission Scope: READ &amp; REPORT ONLY</div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-2">
+              <span className="font-bold text-amber-950 text-sm block">2. Officer Portal</span>
+              <p className="text-slate-600 leading-relaxed">
+                Municipal field officers inspect grievances, start work, update project progress %, add milestones, and complete operational tasks.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-amber-800">Permission Scope: OPERATIONAL PROCESS &amp; UPDATE</div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-200 space-y-2">
+              <span className="font-bold text-indigo-950 text-sm block">3. Administrator Portal</span>
+              <p className="text-slate-600 leading-relaxed">
+                Municipal Commissioner &amp; High Officials manage users, assign departments, configure budgets, audit logs, and broadcast advisories.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-indigo-800">Permission Scope: FULL SYSTEM CONTROL</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENDER SYSTEM SETTINGS TAB */}
+      {adminTab === 'settings' && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
+          <div className="pb-4 border-b border-slate-100">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-indigo-600" />
+              <span>System Settings &amp; Master Data Control</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Active Firebase Project: <strong className="font-mono text-slate-800">smart-civic-a54ee</strong> | Named Firestore DB: <strong className="font-mono text-indigo-700">ai-studio-smartcivicplatfo-c6b07919-e88d-4b7e-940f-6210daf54e8d</strong>
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-4 rounded-2xl border border-slate-200 space-y-2">
+              <span className="font-bold text-slate-800 block text-sm">Real-time Firestore Sync State</span>
+              <div className="text-slate-600 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Connected to Cloud Firestore onSnapshot Event Bus</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-slate-200 space-y-2">
+              <span className="font-bold text-slate-800 block text-sm">Security Rules Status</span>
+              <div className="text-slate-600 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Attribute-Based Security Rules Deployed via RPC</span>
               </div>
             </div>
           </div>

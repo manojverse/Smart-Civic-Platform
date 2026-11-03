@@ -23,41 +23,61 @@ export const normalizeUserRole = (role?: string | UserRole): UserRole => {
   return 'citizen';
 };
 
-export const getRoleDisplayName = (role: UserRole | string): string => {
-  const normalizedRole = normalizeUserRole(role);
-
-  switch (normalizedRole) {
-    case 'citizen':
-      return 'Citizen';
-    case 'staff':
-      return 'Field Officer';
-    case 'admin':
-      return 'Administrator';
-    default:
-      return 'Citizen';
-  }
+export const isCitizenRole = (role?: string | UserRole): boolean => {
+  const r = String(role || 'citizen').toLowerCase();
+  return r === 'citizen' || r === 'unconfigured';
 };
 
-// ─── Three-Portal Role System ───────────────────────────────────────────────
-// Maps all internal roles to exactly 3 portal categories
-export type PortalRole = 'citizen' | 'staff' | 'admin';
+export const isFieldStaffRole = (role?: string | UserRole): boolean => {
+  const r = String(role || '').toLowerCase();
+  return r === 'worker' || r === 'field_officer';
+};
+
+export const isDepartmentOfficerRole = (role?: string | UserRole): boolean => {
+  const r = String(role || '').toLowerCase();
+  return (
+    r === 'department_officer' ||
+    r === 'higher_official' ||
+    r === 'officer' ||
+    r === 'staff' ||
+    r === 'field_officer' ||
+    r === 'worker'
+  );
+};
+
+export const isAdminRole = (role?: string | UserRole): boolean => {
+  const r = String(role || '').toLowerCase();
+  return r === 'admin' || r === 'super_admin';
+};
+
+export const getRoleDisplayName = (role: UserRole | string): string => {
+  const r = String(role || 'citizen').toLowerCase();
+  if (isAdminRole(r)) return 'Administrator';
+  if (isDepartmentOfficerRole(r)) return 'Department Officer';
+  return 'Citizen';
+};
+
+// ─── Three-Portal Role System (Citizen, Department Officer, Admin) ─────────
+export type PortalRole = 'citizen' | 'field_staff' | 'department_officer' | 'admin' | 'staff';
 
 export const getPortalRole = (role: UserRole | string | undefined): PortalRole => {
   const r = String(role || 'citizen').toLowerCase();
-  if (r === 'admin' || r === 'super_admin') return 'admin';
-  if (r === 'worker' || r === 'field_officer' || r === 'higher_official' || r === 'department_officer' || r === 'staff' || r === 'officer') return 'staff';
+  if (isAdminRole(r)) return 'admin';
+  if (isDepartmentOfficerRole(r)) return 'department_officer';
   return 'citizen';
 };
 
 export const isAdminPortalRole = (role: UserRole | string | undefined): boolean =>
-  getPortalRole(role) === 'admin';
+  isAdminRole(role);
 
 export const isStaffPortalRole = (role: UserRole | string | undefined): boolean =>
-  getPortalRole(role) === 'staff';
+  isDepartmentOfficerRole(role);
 
-export const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
+export const PORTAL_ROLE_LABELS: Record<string, string> = {
   citizen: 'Citizen',
-  staff: 'Field Officer',
+  field_staff: 'Department Officer',
+  department_officer: 'Department Officer',
+  staff: 'Department Officer',
   admin: 'Administrator',
 };
 
@@ -65,6 +85,7 @@ export type ComplaintCategory =
   | 'Garbage'
   | 'Pothole'
   | 'Road Damage'
+  | 'Footpath Damage'
   | 'Water Leakage'
   | 'Drainage'
   | 'Streetlight'
@@ -95,6 +116,7 @@ export type ComplaintStatus =
   | 'Verified'
   | 'Accepted'
   | 'Assigned'
+  | 'Work Planned'
   | 'In Progress'
   | 'Work Completed'
   | 'Pending Verification'
@@ -129,12 +151,15 @@ export type MunicipalDepartment =
 
 export interface User {
   id: string;
+  uid?: string;
+  firebaseUid?: string;
   name: string;
   email: string;
   role: UserRole;
   phone?: string;
   mobile?: string;
   status?: 'active' | 'inactive';
+  dutyStatus?: 'ON_DUTY' | 'OFF_DUTY';
   ward?: string;
   department?: MunicipalDepartment;
   avatar?: string;
@@ -169,9 +194,26 @@ export interface StatusHistoryItem {
 
 export interface CitizenFeedback {
   rating: number; // 1 to 5
+  resolutionQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+  officerResponseExperience?: 'excellent' | 'good' | 'fair' | 'poor' | 'very_helpful' | 'professional' | 'average' | 'unresponsive';
   comment: string;
   submittedAt: string;
   timelinessSatisfaction: 'very_satisfied' | 'satisfied' | 'neutral' | 'dissatisfied';
+  evidenceUrl?: string;
+}
+
+export interface AppealRecord {
+  id: string;
+  complaintId: string;
+  reason: string;
+  additionalDescription?: string;
+  photoUrl?: string;
+  submittedAt: string;
+  submittedBy: string;
+  status: 'Appeal Submitted' | 'Under Review' | 'Accepted' | 'Rejected' | 'Reopened';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewRemarks?: string;
 }
 
 export type AIValidity = 'VALID' | 'INVALID' | 'NEEDS_REVIEW';
@@ -211,6 +253,10 @@ export interface ComplaintLocation {
   address: string;
   landmark?: string;
   ward: string;
+  zone?: string;
+  constituency?: string;
+  city?: string;
+  district?: string;
   lat: number;
   lng: number;
 }
@@ -246,16 +292,23 @@ export interface VerificationDetails {
 }
 
 export interface Complaint {
-  id: string; // e.g. CS-VZM-2026-000101
+  id: string; // e.g. SCP-2026-000001
   title: string;
   description: string;
   category: ComplaintCategory;
+  type?: string;
   subcategory?: string;
   severity: Severity;
   priority: Priority;
   status: ComplaintStatus;
   location: ComplaintLocation;
+  district?: string;
+  zone?: string;
+  constituency?: string;
   photos: string[];
+  supportingDocName?: string;
+  submissionChannel?: 'Web Portal' | 'Mobile App' | 'Support Staff Entry';
+  declarationAccepted?: boolean;
   reportedBy: {
     id: string;
     name: string;
@@ -281,8 +334,11 @@ export interface Complaint {
     proofPhotos: string[];
     resolvedBy: string;
   };
+  appeals?: AppealRecord[];
   slaHours: number;
   slaDeadline: string; // ISO string
+  targetResponseDate?: string;
+  scheduledWorkDate?: string;
   isOverdue?: boolean;
   isEscalated?: boolean;
   createdAt: string;
@@ -304,12 +360,15 @@ export interface Complaint {
   recommendedDepartment?: string;
   recommendedAction?: string;
   duplicateStatus?: boolean;
+  duplicateMatchId?: string;
+  duplicateSummary?: string;
+  locationStatus?: string;
   aiVerifiedAt?: string;
   aiVerification?: AIVerificationResult;
   photoAnalysis?: PhotoAuthenticityAnalysis;
 }
 
-export type Language = 'en' | 'te' | 'hi';
+export type Language = 'en' | 'ta' | 'te' | 'hi';
 
 export type ImageFraudVerdict = 
   | 'AUTHENTIC_FIELD_CAPTURE' 
@@ -324,6 +383,7 @@ export interface PhotoAuthenticityAnalysis {
   aiLikelihood: 'LOW' | 'MEDIUM' | 'HIGH' | 'SUSPECTED_AI';
   tamperRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   imageFraudVerdict: ImageFraudVerdict;
+  verdict?: ImageFraudVerdict | string;
   detectedCivicFeature: string;
   detectedFeatureSeverity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   relevanceToCivicIssue: 'RELEVANT_MATCH' | 'PARTIAL_MATCH' | 'MISMATCHED_OR_NON_CIVIC';
@@ -339,7 +399,9 @@ export interface AuditLog {
   id: string;
   complaintId?: string;
   user: string;
+  userName?: string;
   role: UserRole;
+  userRole?: UserRole | string;
   action: string;
   details: string;
   timestamp: string;
@@ -358,11 +420,13 @@ export interface SmartServiceItem {
     | 'Emergency Services'
     | 'Municipal Services';
   address: string;
+  ward?: string;
   phone: string;
   lat: number;
   lng: number;
   timings?: string;
   emergencyContact?: boolean;
+  isEmergency?: boolean;
   description: string;
 }
 
@@ -407,6 +471,37 @@ export interface DepartmentInfo {
   openComplaints: number;
   avgResolutionDays: number;
   slaComplianceRate: number; // percentage
+}
+
+export type OfficerTaskStatus =
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'IN_PROGRESS'
+  | 'ON_HOLD'
+  | 'COMPLETED'
+  | 'OVERDUE';
+
+export interface OfficerTask {
+  id: string;
+  title: string;
+  description?: string;
+  relatedComplaintId?: string;
+  relatedProjectId?: string;
+  assignedOfficer: string;
+  assignedOfficerId?: string;
+  zone?: string;
+  ward?: string;
+  constituency?: string;
+  priority: Priority | 'High' | 'Medium' | 'Low' | 'Critical' | 'P1-Critical' | 'P2-High' | 'P3-Medium' | 'P4-Low';
+  dueDate: string;
+  status: OfficerTaskStatus;
+  progress: number; // 0 - 100
+  remarks?: string;
+  lat?: number;
+  lng?: number;
+  location?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type InfrastructureProjectType =

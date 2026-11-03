@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { Complaint, ComplaintStatus, Severity, InfrastructureProject, InfrastructureProjectStatus } from '../types';
 
 interface LeafletMapProps {
-  // Center coordinates (default: Bengaluru central civic grid)
+  // Center coordinates (default: Chennai / Tamil Nadu central municipal grid)
   center?: [number, number];
   zoom?: number;
   height?: string;
@@ -39,6 +39,7 @@ const STATUS_COLORS: Record<ComplaintStatus, string> = {
   Verified: '#8b5cf6', // purple
   Assigned: '#f59e0b', // amber
   Accepted: '#06b6d4', // cyan
+  'Work Planned': '#8b5cf6', // purple
   'In Progress': '#f97316', // orange
   'Work Completed': '#8b5cf6', // purple
   'Pending Verification': '#eab308', // yellow
@@ -156,13 +157,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (!pickerMarkerRef.current) {
       const pinHtml = `
         <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-full cursor-grab active:cursor-grabbing">
-          <div class="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-xl ring-4 ring-white border-2 border-emerald-700 animate-bounce">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
+          <div class="w-11 h-11 bg-red-600 text-white rounded-full flex items-center justify-center shadow-2xl ring-4 ring-red-200 border-2 border-red-800 animate-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 fill-white stroke-red-800" viewBox="0 0 24 24">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
             </svg>
           </div>
-          <div class="absolute -bottom-1 w-3 h-1.5 bg-black/30 rounded-full blur-[1px]"></div>
+          <div class="absolute -bottom-1.5 w-4 h-2 bg-black/40 rounded-full blur-[1px]"></div>
         </div>
       `;
 
@@ -197,7 +197,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     markersGroupRef.current.clearLayers();
 
-    complaints.forEach((comp) => {
+    (complaints || []).forEach((comp) => {
+      if (!comp?.location?.lat || !comp?.location?.lng) return;
       const statusColor = STATUS_COLORS[comp.status] || '#3b82f6';
       const severityColor = SEVERITY_COLORS[comp.severity] || '#f59e0b';
 
@@ -272,7 +273,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       });
     });
 
-    infrastructureProjects.forEach((proj) => {
+    (infrastructureProjects || []).forEach((proj) => {
+      if (!proj?.lat || !proj?.lng) return;
       const statusColor = PROJECT_STATUS_COLORS[proj.status] || '#0f766e';
       const markerHtml = `
         <div class="relative cursor-pointer -translate-x-1/2 -translate-y-full">

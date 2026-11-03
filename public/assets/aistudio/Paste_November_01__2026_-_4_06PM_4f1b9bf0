@@ -1,0 +1,878 @@
+# MASTER PROMPT – COMPLETE APPLICATION AUDIT, BUG FIXING, OPTIMIZATION & FEATURE ENHANCEMENT
+
+## PROJECT DETAILS
+
+**Project Name:** SMART CIVIC DEVELOPMENT & COMPLAINT RESOLUTION PLATFORM  
+**Application Name:** CivicSense  
+**Domain:** Full-Stack Web Development with AI Integration  
+**Live Deployment:** https://smartcivic-platform.vercel.app/  
+**GitHub Repository:** https://github.com/manojverse/Smart-Civic-Platform
+
+## YOUR ROLE
+
+Act as a Senior Full-Stack Developer, Software Architect, QA Engineer, UI/UX Designer, Database Engineer, and AI Integration Specialist.
+
+Your responsibility is to thoroughly inspect, debug, optimize, and improve my existing CivicSense application.
+
+This is an existing application. Do NOT rebuild it from scratch or replace its current architecture unnecessarily.
+
+First understand the complete existing codebase, components, pages, routing, authentication, database, API integrations, AI features, map implementation, and user workflows.
+
+Then fix the existing problems and implement the required improvements directly in the source code.
+
+**IMPORTANT: Do not simply provide suggestions, explanations, or sample code. Analyze the existing project and make the actual code changes.**
+
+---
+
+# PHASE 1: COMPLETE APPLICATION AUDIT
+
+Inspect the entire application, including:
+
+- Every frontend page and route.
+- All dashboards.
+- All buttons, links, forms, dropdowns, filters, and navigation menus.
+- Citizen, Officer, Staff, and Admin workflows.
+- Authentication and authorization.
+- Backend APIs and server routes.
+- Firebase Authentication.
+- Cloud Firestore database operations.
+- LocalStorage and application state management.
+- Gemini AI integration.
+- Complaint reporting and management.
+- Infrastructure project management.
+- GIS maps and location functionality.
+- Notifications and announcements.
+- Analytics and reports.
+- Responsive design.
+- Deployment configuration.
+
+Identify and fix:
+
+1. White screen errors.
+2. Runtime JavaScript errors.
+3. React rendering errors.
+4. Missing or incorrect imports.
+5. Invalid component references.
+6. Broken navigation.
+7. Incorrect routing.
+8. API failures.
+9. Database read/write errors.
+10. Authentication issues.
+11. State management problems.
+12. Missing loading states.
+13. Incorrect empty states.
+14. Form validation problems.
+15. Data synchronization problems.
+16. Responsive layout issues.
+17. Broken buttons and non-functional controls.
+18. Console errors and warnings.
+19. Missing error handling.
+20. Any other bugs discovered during the audit.
+
+Do not stop after fixing one page. Test the entire application.
+
+# PHASE 2: ELIMINATE WHITE SCREENS
+
+One of the major problems is that certain pages display a completely blank white screen when there is no data, an API fails, or a page reloads.
+
+This must be fixed throughout the application.
+
+Implement:
+
+- Proper loading screens.
+- Empty-state screens.
+- Error-state screens.
+- Retry options.
+- Graceful fallback UI.
+- Safe conditional rendering.
+- Proper error boundaries.
+- API timeout and failure handling.
+- Authentication loading states.
+- Database loading states.
+
+Examples:
+
+**When there are no complaints:**
+
+Display:
+
+"No Complaints Found"
+
+"No complaints have been submitted yet."
+
+Include an appropriate illustration or icon and an action button if relevant.
+
+**When there are no infrastructure projects:**
+
+Display:
+
+"No Infrastructure Projects Available"
+
+**When there are no notifications:**
+
+Display:
+
+"You are all caught up! No new notifications."
+
+**When API requests fail:**
+
+Display:
+
+"Unable to load data. Please check your connection and try again."
+
+Provide a Retry button.
+
+**When the user refreshes any page:**
+
+The application must reload correctly without displaying a blank screen.
+
+IMPORTANT:
+Never display a completely blank page just because a database collection is empty, an API returns an error, or data is temporarily unavailable.
+
+# PHASE 3: AUTHENTICATION & DEMO ACCOUNT MANAGEMENT
+
+Fix the complete login, registration, and demo account functionality.
+
+The application must support two clear entry methods:
+
+### A. Create a New Account
+
+Users should be able to:
+
+- Register using their name, email, and password.
+- Select an allowed account role if registration policy permits it.
+- Validate all required fields.
+- Prevent duplicate email registration.
+- Authenticate securely.
+- Access the correct dashboard after login.
+
+Do not allow ordinary users to register themselves as Admin or higher-authority government officials.
+
+Privileged roles must be assigned through an authorized admin process.
+
+### B. Demo Account Login
+
+Provide clearly visible demo account options for testing.
+
+For example:
+
+- Citizen Demo
+- Field Officer Demo
+- Department Officer Demo
+- Admin Demo
+
+Use safe demo credentials configured through environment variables or a secure demo-account provisioning process.
+
+Do not expose production passwords, API keys, or privileged credentials in frontend source code.
+
+Demo login must:
+
+- Authenticate the selected demo account.
+- Open the corresponding dashboard.
+- Show only the permissions allowed for that role.
+- Avoid silently creating accounts every time a user opens the application.
+- Avoid automatically inserting random complaints, projects, or users.
+- Avoid resetting existing user data.
+
+### Important Authentication Rules
+
+1. Do not automatically log in users without their action.
+2. Do not automatically create a new account.
+3. Do not automatically populate user data on page load.
+4. Do not bypass authentication.
+5. Preserve valid sessions across page refreshes.
+6. Redirect unauthorized users appropriately.
+7. Prevent citizens from accessing admin-only pages.
+8. Provide a proper logout function.
+9. Protect routes based on user roles.
+
+If demo data is required, provide a separate, clearly labelled demo-data initialization action.
+
+# PHASE 4: COMPLAINT MANAGEMENT – CRITICAL FIX
+
+Complaint reporting is one of the most important modules.
+
+Implement a reliable end-to-end complaint workflow.
+
+### Citizen Complaint Registration
+
+A citizen must be able to submit a complaint using:
+
+- Complaint title.
+- Detailed description.
+- Complaint category.
+- Subcategory where applicable.
+- Severity.
+- Location.
+- District.
+- City or town.
+- Ward number.
+- Landmark.
+- GPS coordinates where available.
+- Optional image attachment.
+
+Example categories:
+
+- Road Damage.
+- Potholes.
+- Drainage Problems.
+- Water Leakage.
+- Garbage Accumulation.
+- Streetlight Failure.
+- Public Infrastructure Damage.
+- Sanitation Issues.
+- Public Safety Issues.
+- Other Civic Issues.
+
+### IMAGE UPLOAD – VERY IMPORTANT
+
+There is a serious issue in the current complaint submission flow.
+
+When a citizen submits a complaint without uploading an image, the system sometimes generates or uses a random image path and incorrectly reports an image mismatch.
+
+Completely eliminate this behaviour.
+
+Implement these strict rules:
+
+**Case 1: No image uploaded**
+
+- Allow complaint submission if an image is optional.
+- Store the image field as null or an empty value.
+- Do not generate a random image.
+- Do not use a previously uploaded image.
+- Do not generate a fake image URL.
+- Do not run image verification.
+- Do not report an image mismatch.
+- Display "No image attached" in the complaint details.
+
+**Case 2: Image uploaded**
+
+- Upload the actual selected image.
+- Validate the file type and size.
+- Store the correct image reference.
+- Pass the actual uploaded image to the AI image-analysis service.
+- Analyze whether the image is relevant to the complaint description and category.
+- Display a meaningful verification result.
+- Never replace the user's image with a random image.
+- Handle upload and analysis failures separately.
+
+**Case 3: Image is unrelated**
+
+If the citizen reports a pothole but uploads an unrelated food or animal photograph, explain that the uploaded image may not match the complaint.
+
+Ask the citizen to upload a relevant image or continue without an image if the policy allows it.
+
+Do not fabricate verification results.
+
+**Case 4: Image analysis unavailable**
+
+If Gemini API is unavailable:
+
+- Display "Image verification temporarily unavailable."
+- Do not pretend AI verification succeeded.
+- Do not randomly generate a verification result.
+- Allow the complaint workflow to continue if verification is not mandatory.
+
+Image verification must be based only on the actual uploaded image.
+
+### Complaint Submission
+
+After submission:
+
+- Generate a unique complaint ID.
+- Save the complaint to Firestore.
+- Set the initial status to "Submitted".
+- Save the citizen's user ID.
+- Save the complaint creation timestamp.
+- Preserve the correct location and attachment information.
+- Show a proper success message.
+- Display the complaint in the citizen dashboard.
+- Make it available to the appropriate officers and administrators.
+
+Do not show a success message if the database operation actually failed.
+
+# PHASE 5: COMPLETE ROLE-BASED WORKFLOW
+
+All roles must see the same underlying complaint records according to their permissions.
+
+A complaint submitted by a citizen must be visible to authorized officers and administrators.
+
+It must not disappear between dashboards.
+
+### 1. CITIZEN DASHBOARD
+
+Citizens should be able to:
+
+- View their own complaints.
+- Submit new complaints.
+- View complaint details.
+- Track complaint status.
+- View assigned department.
+- View assigned officer when appropriate.
+- View status history.
+- View officer updates.
+- View uploaded images.
+- View resolution evidence.
+- Receive notifications.
+- Submit feedback after resolution.
+- Reopen an eligible complaint.
+
+Citizen dashboard statistics should be calculated from actual accessible records.
+
+### 2. FIELD OFFICER DASHBOARD
+
+Field officers should be able to:
+
+- View complaints assigned to them.
+- View complaint location.
+- View complaint details and photographs.
+- Accept or acknowledge assigned work.
+- Update work progress.
+- Add remarks.
+- Upload before-and-after photographs.
+- Mark work as completed.
+- Submit completion evidence.
+
+Field officers must not be able to access unrelated administrative permissions.
+
+### 3. DEPARTMENT OFFICER DASHBOARD
+
+Department officers should be able to:
+
+- View complaints assigned to their department.
+- Review complaints.
+- Assign complaints to available field officers.
+- Monitor ongoing work.
+- Verify completed work.
+- Return incomplete work for correction.
+- Escalate overdue complaints.
+- View department-level analytics.
+
+### 4. ADMIN DASHBOARD
+
+Administrators should be able to:
+
+- View all complaints.
+- View all infrastructure projects.
+- Manage users and roles.
+- Manage departments.
+- Manage officers.
+- Assign complaints.
+- Monitor complaint progress.
+- Verify complaint resolutions.
+- View escalation records.
+- Manage announcements.
+- View system analytics.
+- Monitor audit logs.
+
+IMPORTANT:
+
+Every dashboard must use the same consistent data source.
+
+Do not create separate unrelated dummy complaints for each role.
+
+A complaint created by a citizen must appear in the appropriate officer and admin views.
+
+All updates must be reflected in the correct dashboards after successful database operations.
+
+Implement proper Firestore security rules and server-side permission checks. Do not rely only on hiding buttons in the frontend.
+
+# PHASE 6: COMPLAINT STATUS & LIFECYCLE
+
+Implement a consistent complaint lifecycle.
+
+Suggested workflow:
+
+Submitted → Under Review → Assigned → Work in Progress → Resolved → Verified → Closed.
+
+Additional statuses:
+
+- Rejected.
+- Reopened.
+- Escalated.
+- On Hold.
+
+Ensure that only authorized roles can perform each transition.
+
+Maintain a status history containing:
+
+- Previous status.
+- New status.
+- Updated by.
+- Timestamp.
+- Remarks.
+- Supporting evidence where applicable.
+
+Do not overwrite historical status information.
+
+A citizen must be able to track the progress of their complaint.
+
+# PHASE 7: TAMIL NADU MAP INTEGRATION
+
+The current application should use Tamil Nadu as its primary geographic focus.
+
+The map must not be centered on unrelated countries or random global locations.
+
+Use Leaflet with OpenStreetMap or the existing compatible map provider.
+
+### Map Default Location
+
+Set the default map view around Tamil Nadu.
+
+The map should initially show Tamil Nadu and allow users to zoom into individual districts, cities, towns, and wards.
+
+### Tamil Nadu Geographic Coverage
+
+Include representative locations across Tamil Nadu, such as:
+
+- Chennai.
+- Coimbatore.
+- Madurai.
+- Tiruchirappalli.
+- Salem.
+- Tirunelveli.
+- Erode.
+- Vellore.
+- Kanchipuram.
+- Tiruvallur.
+- Thanjavur.
+- Dindigul.
+- Thoothukudi.
+- Kanniyakumari.
+- Cuddalore.
+- Villupuram.
+- Dharmapuri.
+- Krishnagiri.
+- Namakkal.
+- Karur.
+- Sivaganga.
+- Ramanathapuram.
+- Virudhunagar.
+- Tenkasi.
+- Tirupur.
+- Ranipet.
+- Tirupattur.
+- Chengalpattu.
+- Mayiladuthurai.
+- Nagapattinam.
+- Tiruvarur.
+- Ariyalur.
+- Perambalur.
+- Nilgiris.
+- Kallakurichi.
+- Tiruvannamalai.
+
+### Infrastructure Project Map
+
+Show multiple infrastructure project markers at different representative Tamil Nadu locations.
+
+Example project types:
+
+- Road Development.
+- Road Reconstruction.
+- Stormwater Drainage.
+- Underground Drainage.
+- Drinking Water Supply.
+- Streetlight Installation.
+- Public Park Development.
+- Bus Stand Renovation.
+- Government School Infrastructure.
+- Public Building Renovation.
+- Waste Management.
+- Public Sanitation.
+
+Each project marker should open a detailed information panel showing:
+
+- Project ID.
+- Project name.
+- District.
+- City or town.
+- Ward.
+- Project category.
+- Responsible department.
+- Project status.
+- Budget.
+- Start date.
+- Expected completion date.
+- Actual progress percentage.
+- Contractor, where available.
+- Project description.
+
+Use appropriate marker colours for project status:
+
+- Green – Completed.
+- Blue – In Progress.
+- Orange – Delayed.
+- Grey – Planned.
+- Red – Critical or attention required.
+
+Add filters for:
+
+- District.
+- Project category.
+- Project status.
+- Department.
+
+### Map Data Integrity
+
+Do not randomly generate fake GPS coordinates.
+
+Do not display a project at an incorrect location.
+
+Use valid coordinates and associate each location with the correct district or town.
+
+If sample project records are used for demonstrations, clearly label them as "Demo Data".
+
+Do not present sample projects as actual Tamil Nadu government projects.
+
+Make the map data-driven so authorized administrators can add, edit, and remove project records.
+
+### Complaint Map
+
+Display complaint markers separately from infrastructure project markers.
+
+Use different marker icons or layers.
+
+Allow users to filter complaints by:
+
+- Complaint category.
+- District.
+- Status.
+- Severity.
+
+Clicking a complaint marker should show its complaint ID, category, status, and location.
+
+Avoid exposing sensitive personal information on public maps.
+
+# PHASE 8: INFRASTRUCTURE PROJECT MANAGEMENT
+
+Ensure that infrastructure projects can be created, edited, viewed, filtered, and monitored.
+
+Each project must contain:
+
+- Project ID.
+- Project name.
+- Project description.
+- Project type.
+- District.
+- City.
+- Ward.
+- Exact location or coordinates.
+- Responsible department.
+- Budget.
+- Contractor information, if available.
+- Start date.
+- Expected completion date.
+- Current progress.
+- Project status.
+- Milestones.
+- Supporting images.
+
+Project progress should be stored and updated correctly.
+
+Ensure the map, project listing, project details, and admin dashboard all use the same project records.
+
+# PHASE 9: AI INTEGRATION IMPROVEMENTS
+
+Preserve the existing Gemini API integration.
+
+Improve the AI functionality without introducing fake AI results.
+
+Expected capabilities:
+
+1. Complaint classification.
+2. Complaint category suggestions.
+3. Severity assessment.
+4. Suggested department assignment.
+5. Complaint description analysis.
+6. Uploaded image analysis.
+7. Potential duplicate complaint detection.
+8. Suggested resolution priority.
+9. Safety risk identification.
+
+### AI Rules
+
+- Use the actual complaint text.
+- Use the actual uploaded image when available.
+- Never invent image URLs or image contents.
+- Never claim that an AI verification occurred when it did not.
+- Clearly distinguish AI suggestions from verified official decisions.
+- Provide a fallback when the API is unavailable.
+- Validate and sanitize AI responses before using them.
+- Do not expose Gemini API keys in frontend code.
+
+Duplicate detection should identify potential duplicates, not automatically reject valid complaints.
+
+Use existing distance and text similarity logic where appropriate.
+
+Show a message such as:
+
+"A similar complaint may already exist nearby. Please review it before submitting."
+
+Let the citizen decide whether to continue, unless a legitimate system rule requires otherwise.
+
+# PHASE 10: DATABASE & DATA CONSISTENCY
+
+Audit the complete Firestore integration.
+
+Inspect existing collections, document structures, queries, listeners, and write operations.
+
+Preserve the existing schema where possible. Make migrations carefully if required.
+
+Check collections such as:
+
+- users
+- complaints
+- infrastructure_projects
+- departments
+- notifications
+- announcements
+- audit_logs
+
+Ensure:
+
+1. Every record has a stable unique identifier.
+2. User references are correct.
+3. Complaint references are correct.
+4. Department references are correct.
+5. Firestore writes are awaited.
+6. Errors are handled correctly.
+7. Realtime listeners are unsubscribed when components unmount.
+8. Duplicate records are prevented.
+9. Updates do not unintentionally overwrite other fields.
+10. Data remains available after page refresh.
+11. LocalStorage is not incorrectly treated as the permanent database.
+12. Database failures do not silently appear as successful saves.
+
+If the application uses LocalStorage as a fallback, clearly separate temporary local data from successfully persisted cloud data.
+
+Never silently switch between different data sources in a way that creates inconsistent dashboards.
+
+# PHASE 11: UI/UX IMPROVEMENTS
+
+Maintain the existing CivicSense visual identity.
+
+Do not unnecessarily redesign the entire application.
+
+Improve consistency across all pages:
+
+- Consistent navigation.
+- Consistent sidebar.
+- Consistent typography.
+- Consistent spacing.
+- Consistent buttons.
+- Consistent form styles.
+- Consistent status badges.
+- Consistent cards.
+- Consistent tables.
+- Consistent modal dialogs.
+
+Provide:
+
+- Responsive desktop layout.
+- Responsive tablet layout.
+- Responsive mobile layout.
+- Proper empty states.
+- Proper loading skeletons.
+- Clear validation messages.
+- Toast notifications.
+- Confirmation dialogs for destructive actions.
+- Accessible labels.
+- Keyboard-friendly controls.
+
+Ensure every visible button performs its intended action.
+
+Remove dead buttons, placeholder links, and controls that do nothing.
+
+# PHASE 12: PERFORMANCE & SECURITY
+
+Improve application stability and performance.
+
+Check:
+
+- Unnecessary component re-rendering.
+- Repeated API requests.
+- Memory leaks.
+- Uncleaned subscriptions.
+- Large image uploads.
+- Image optimization.
+- API request validation.
+- Input sanitization.
+- Authentication token handling.
+- Firestore security rules.
+- Role-based access.
+- Environment variable handling.
+- CORS configuration.
+- Error logging.
+
+Never expose passwords, API keys, secret tokens, or private user information.
+
+Do not weaken security rules to make a feature work.
+
+# PHASE 13: TESTING – TEST EVERY USER WORKFLOW
+
+After implementing changes, test the complete application.
+
+### Authentication Tests
+
+- New citizen registration.
+- Existing user login.
+- Invalid password.
+- Duplicate email.
+- Demo citizen login.
+- Demo officer login.
+- Demo admin login.
+- Logout.
+- Refresh after login.
+- Unauthorized page access.
+
+### Complaint Tests
+
+- Submit complaint without an image.
+- Submit complaint with a valid image.
+- Submit complaint with an unrelated image.
+- Submit complaint with missing required fields.
+- Submit complaint with invalid image format.
+- Submit complaint when AI is unavailable.
+- Verify complaint appears in citizen dashboard.
+- Verify complaint appears in authorized officer dashboard.
+- Verify complaint appears in admin dashboard.
+- Update complaint status.
+- Upload completion evidence.
+- Verify resolved complaint.
+- Reopen eligible complaint.
+
+### Infrastructure Tests
+
+- Create a project.
+- Edit a project.
+- Delete a project with confirmation.
+- Filter projects.
+- Open project details.
+- View project on map.
+- Update project progress.
+- Verify updated data after refresh.
+
+### Map Tests
+
+- Tamil Nadu default map view.
+- District navigation.
+- Project markers.
+- Complaint markers.
+- Marker details.
+- Filters.
+- Zoom controls.
+- Mobile map layout.
+
+### Reliability Tests
+
+- Refresh every major page.
+- Open routes directly.
+- Navigate backward and forward.
+- Test empty database collections.
+- Test unavailable APIs.
+- Test slow network conditions.
+- Test missing images.
+- Test expired sessions.
+
+Do not mark tests as passed unless they have actually been executed.
+
+Provide a test report showing:
+
+- Test case.
+- Expected result.
+- Actual result.
+- Pass/Fail.
+- Notes.
+
+# PHASE 14: FINAL DELIVERABLES
+
+Complete the following:
+
+1. Full application code audit.
+2. Fix all discovered runtime errors.
+3. Fix all discovered white-screen issues.
+4. Fix authentication and demo-login issues.
+5. Fix complaint image upload and verification.
+6. Fix complaint synchronization between roles.
+7. Fix Firestore data consistency.
+8. Fix map location and marker functionality.
+9. Add Tamil Nadu-focused infrastructure project visualization.
+10. Improve empty states and loading states.
+11. Improve error handling.
+12. Improve security and role-based access.
+13. Improve responsive layouts.
+14. Test every major workflow.
+15. Ensure production build succeeds.
+
+After completing the work, provide:
+
+- Summary of bugs identified.
+- Files modified.
+- Changes implemented.
+- New environment variables, if any.
+- Database/security rule changes.
+- Test results.
+- Remaining known issues.
+- Deployment instructions.
+
+---
+
+# STRICT DEVELOPMENT RULES
+
+These rules are mandatory.
+
+1. Do not rebuild the project from scratch.
+2. Do not remove existing working features.
+3. Do not replace the current tech stack without a strong technical reason.
+4. Do not introduce unrelated frameworks or unnecessary dependencies.
+5. Do not create fake complaints automatically.
+6. Do not create random users automatically.
+7. Do not create random image URLs.
+8. Do not use random project coordinates.
+9. Do not fabricate AI responses.
+10. Do not show fake success messages.
+11. Do not use dummy data as real government data.
+12. Do not expose secret credentials.
+13. Do not allow unauthorized role access.
+14. Do not leave blank pages.
+15. Do not leave non-functional buttons.
+16. Do not mark untested functionality as completed.
+17. Preserve existing user data.
+18. Preserve the existing application branding and overall design.
+19. Use environment variables for secrets.
+20. Make changes compatible with the existing Vercel deployment and backend architecture.
+
+## EXECUTION INSTRUCTIONS
+
+Work in the following order:
+
+**Step 1:** Inspect the entire existing codebase and identify the current architecture.
+
+**Step 2:** Create a prioritized list of critical, high, medium, and low-severity bugs.
+
+**Step 3:** Fix critical runtime, routing, authentication, and white-screen errors first.
+
+**Step 4:** Fix complaint submission, image handling, and role-based complaint workflows.
+
+**Step 5:** Fix database synchronization and persistence.
+
+**Step 6:** Improve Tamil Nadu maps and infrastructure project visualization.
+
+**Step 7:** Fix all remaining page-level UI and functional issues.
+
+**Step 8:** Run tests and production build checks.
+
+**Step 9:** Verify that existing functionality has not been broken by the changes.
+
+**Step 10:** Provide a detailed completion report and deployment instructions.
+
+If you encounter a missing API key, unavailable external service, missing Firebase configuration, or a deployment limitation, identify the exact issue and explain how to resolve it. Do not hide it with fake data or fake success states.
+
+**FINAL EXPECTATION:**
+
+I want CivicSense to behave like a reliable, complete, production-oriented civic technology platform.
+
+Every page must load properly. Every role must have the correct permissions. Citizens must be able to submit complaints. Officers must be able to process them. Administrators must be able to monitor everything. Uploaded images must be handled correctly. Empty pages must show meaningful messages instead of white screens. Tamil Nadu infrastructure projects and complaints must be represented correctly on the map.
+
+**Inspect carefully, fix thoroughly, test honestly, and preserve the existing project. Do not stop at giving recommendations. Implement the changes directly.**

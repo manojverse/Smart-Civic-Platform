@@ -1,0 +1,961 @@
+# MASTER ENHANCEMENT PROMPT – USE TAMIL NADU CM HELPLINE PORTAL AS A FUNCTIONAL REFERENCE FOR SMART CIVIC PLATFORM
+
+## 1. PROJECT DETAILS
+
+**Project Title:** SMART CIVIC DEVELOPMENT & COMPLAINT RESOLUTION PLATFORM
+
+**Application Name:** SMART CIVIC PLATFORM
+
+**Live Application:** https://smartcivic-platform.vercel.app/
+
+**GitHub Repository:** https://github.com/manojverse/Smart-Civic-Platform
+
+**Official Reference Portal:** https://cmhelpline.tnega.org/portal/en/home
+
+**Reference Portal Name:** Mudhalvarin Mugavari – Tamil Nadu CM Helpline Portal
+
+## 2. YOUR TASK
+
+Study the publicly accessible Tamil Nadu CM Helpline portal and understand how a professional government grievance redressal system works.
+
+Use the official portal as a functional and workflow reference for improving my existing SMART CIVIC PLATFORM.
+
+Reference the following areas:
+
+- Citizen registration and login.
+- Grievance submission.
+- Complaint acknowledgement.
+- Unique grievance ID generation.
+- My Dashboard.
+- Complaint tracking.
+- Department-wise grievance routing.
+- Officer response and action updates.
+- Complaint status management.
+- SLA and resolution monitoring.
+- Citizen notifications.
+- Appeal and reopening.
+- Citizen feedback.
+- Multilingual support.
+- User-friendly navigation.
+- Citizen support and help information.
+- Administrative monitoring and accountability.
+
+**IMPORTANT:** Take inspiration from useful functionality and workflows. Do not copy the official website's source code, branding, government logos, proprietary design assets, or claim that SMART CIVIC PLATFORM is an official Government of Tamil Nadu portal.
+
+Keep our application identity as SMART CIVIC PLATFORM.
+
+Do not replace our existing application with a copy of the reference portal.
+
+Implement the relevant ideas using our existing React, TypeScript, Node.js, Express, Firebase, Firestore, and Gemini architecture.
+
+---
+
+# 3. REFERENCE PORTAL – CITIZEN EXPERIENCE
+
+Study the public-facing portal and implement an equally understandable and convenient citizen experience.
+
+The citizen should immediately understand:
+
+1. How to register or log in.
+2. How to submit a complaint.
+3. How to obtain a complaint acknowledgement.
+4. How to track an existing complaint.
+5. How to view updates.
+6. How to appeal or reopen an eligible complaint.
+7. How to provide feedback.
+
+### Improve the SMART CIVIC PLATFORM home page
+
+Provide clearly visible navigation options:
+
+- Register / Login.
+- Raise a Complaint.
+- Track a Complaint.
+- My Complaints.
+- Help and Guidelines.
+- Departments.
+- Infrastructure Projects.
+- Announcements.
+
+Keep the home page clean, professional, and citizen-friendly.
+
+Avoid overcrowding the home page.
+
+---
+
+# 4. CITIZEN REGISTRATION AND LOGIN
+
+Implement a reliable citizen authentication experience.
+
+### Registration
+
+Collect only the information required by the application:
+
+- Full name.
+- Mobile number, where supported.
+- Email address, where required.
+- Password or supported authentication method.
+- Address or district, if needed.
+
+Use the existing Firebase Authentication architecture.
+
+If mobile OTP authentication is configured, implement:
+
+- Mobile number entry.
+- OTP sending.
+- OTP verification.
+- Resend OTP after an appropriate waiting period.
+- Invalid OTP handling.
+- Expired OTP handling.
+- Successful login.
+
+If SMS/OTP integration is not configured, do not display a fake OTP verification process. Clearly identify the missing configuration.
+
+### Login
+
+Provide:
+
+- Citizen Login.
+- Demo Citizen Login.
+- Secure session management.
+- Forgot password where applicable.
+- Logout.
+- Session persistence.
+- Protected routes.
+
+After login, redirect citizens to their own dashboard.
+
+Never automatically log in users or create accounts without their action.
+
+Do not collect Aadhaar numbers or unnecessary sensitive personal information.
+
+---
+
+# 5. PROFESSIONAL GRIEVANCE SUBMISSION FORM
+
+Use the reference portal's simple grievance-submission approach and improve it for civic infrastructure complaints.
+
+Create a structured, user-friendly complaint form.
+
+### Section A: Citizen Details
+
+- Name.
+- Registered mobile number.
+- Email, if available.
+- Address.
+
+Automatically populate verified profile information where appropriate.
+
+### Section B: Complaint Details
+
+- Complaint title.
+- Complaint description.
+- Complaint category.
+- Subcategory.
+- Severity.
+- Department.
+- District.
+- City or town.
+- Ward.
+- Street or locality.
+- Landmark.
+
+### Section C: Location Details
+
+- Select district.
+- Select city or town.
+- Select ward, if available.
+- Enter address.
+- Select location on map.
+- Capture GPS coordinates only with permission.
+
+### Section D: Supporting Evidence
+
+Allow:
+
+- Image uploads.
+- PDF attachments.
+- Other permitted supporting documents.
+
+Validate file types and sizes.
+
+Show uploaded filenames and image previews.
+
+Do not generate fake image URLs.
+
+If the citizen does not upload an image, save the image field as null and do not run image verification.
+
+### Section E: Declaration and Submission
+
+Provide an appropriate declaration confirming that the submitted information is accurate to the best of the citizen's knowledge.
+
+On successful submission:
+
+- Generate a unique complaint ID.
+- Save the actual complaint record.
+- Save submission date and time.
+- Save the authenticated citizen ID.
+- Set initial status to Submitted.
+- Route the complaint to the appropriate department workflow.
+- Generate an acknowledgement.
+- Display the complaint ID.
+- Make the complaint available under My Complaints.
+
+Do not display successful submission if the database operation failed.
+
+---
+
+# 6. UNIQUE COMPLAINT ID AND ACKNOWLEDGEMENT
+
+Implement a reliable acknowledgement system inspired by the reference portal.
+
+Every successfully submitted complaint must receive a unique complaint ID.
+
+Example format:
+
+SCP-2026-000001
+
+This is an illustrative format. Implement a collision-resistant ID-generation mechanism appropriate for concurrent submissions.
+
+The acknowledgement page should display:
+
+- SMART CIVIC PLATFORM branding.
+- Complaint ID.
+- Complaint title.
+- Category.
+- District.
+- Submission date.
+- Current status.
+- Assigned department, when available.
+- Acknowledgement message.
+
+Provide actions:
+
+- View Complaint.
+- Track Complaint.
+- Download Acknowledgement.
+- Return to Dashboard.
+
+Allow the citizen to access the acknowledgement again later.
+
+Do not create a new complaint when the citizen refreshes the acknowledgement page.
+
+---
+
+# 7. MY DASHBOARD – CITIZEN GRIEVANCE MANAGEMENT
+
+Create a proper citizen dashboard inspired by the reference portal's My Dashboard concept.
+
+Display:
+
+- Total Complaints.
+- Submitted.
+- Under Review.
+- Assigned.
+- Planned.
+- In Progress.
+- Resolved.
+- Closed.
+- Reopened.
+
+Show a complaint table containing:
+
+- Complaint ID.
+- Title.
+- Category.
+- Department.
+- District.
+- Submission Date.
+- Current Status.
+- Last Updated.
+- Action.
+
+Provide:
+
+- Search.
+- Status filters.
+- Category filters.
+- Date filters.
+- Sort by newest or oldest.
+- View Details.
+- Track Complaint.
+- Download Acknowledgement.
+- Appeal / Reopen, where eligible.
+- Feedback, where eligible.
+
+Only show complaints belonging to the authenticated citizen.
+
+If no complaints exist, show a proper empty state and a Raise Complaint action.
+
+---
+
+# 8. COMPLETE COMPLAINT TRACKING SYSTEM
+
+This is one of the most important features.
+
+Create a proper complaint tracking experience.
+
+A citizen must be able to select a complaint from My Dashboard or enter a valid complaint ID.
+
+Display a visual progress timeline.
+
+### Example timeline
+
+1. Complaint Submitted.
+2. Acknowledgement Generated.
+3. Under Review.
+4. Assigned to Department.
+5. Assigned to Officer.
+6. Work Planned.
+7. Work In Progress.
+8. Work Completed.
+9. Verification Pending.
+10. Resolved.
+11. Closed.
+
+Each actual timeline event must contain:
+
+- Status.
+- Date and time.
+- Responsible role.
+- Department.
+- Remarks.
+- Supporting evidence, if available.
+
+Display current status prominently.
+
+Show the estimated or target resolution date only when a valid department SLA exists.
+
+Clearly distinguish:
+
+- Estimated resolution date.
+- Actual resolution date.
+- Overdue status.
+
+Do not invent progress events or dates.
+
+---
+
+# 9. DEPARTMENT-WISE COMPLAINT ROUTING
+
+Study the reference portal's approach of routing grievances to the responsible department.
+
+Implement appropriate department assignment for SMART CIVIC PLATFORM.
+
+Suggested department mapping:
+
+| Complaint Category | Responsible Department |
+|---|---|
+| Road Damage / Potholes | Roads and Highways |
+| Drainage Blockage | Drainage and Sewerage |
+| Water Leakage | Water Supply |
+| Garbage Accumulation | Sanitation and Solid Waste Management |
+| Streetlight Failure | Electrical Maintenance |
+| Park Maintenance | Parks and Public Spaces |
+| Public Building Damage | Public Infrastructure |
+| Other Civic Issues | General Municipal Services |
+
+The mapping should be configurable by authorized Admin users.
+
+### Automatic department suggestion
+
+Use category and description to suggest the appropriate department.
+
+Gemini AI may provide a recommendation.
+
+However:
+
+- The recommendation must be validated.
+- Authorized officers can correct it.
+- The final department assignment must be recorded.
+- The system must not silently assign an unrelated department.
+- Uncertain cases should enter a manual review queue.
+
+### Unassigned complaints
+
+Create an Admin / Department Officer queue for complaints requiring manual classification.
+
+Do not discard complaints because the department cannot be determined automatically.
+
+---
+
+# 10. OFFICER RESPONSE AND ACTION MANAGEMENT
+
+Implement a complete officer-response workflow.
+
+When a complaint reaches the department:
+
+The Department Officer should be able to:
+
+- Review the complaint.
+- Read the citizen's description.
+- View supporting photographs.
+- View location.
+- Confirm the category.
+- Set priority.
+- Add internal remarks.
+- Add citizen-visible remarks.
+- Assign Field Staff.
+- Schedule work.
+- Set a target date.
+- Update complaint status.
+- Escalate delayed cases.
+
+### Important: Internal versus citizen-visible remarks
+
+Provide separate fields:
+
+1. Internal administrative notes.
+2. Citizen-visible status updates.
+
+Citizens must not see confidential internal notes.
+
+Every officer action must be recorded in the complaint history and audit log.
+
+---
+
+# 11. FIELD STAFF RESPONSE AND RESOLUTION
+
+Implement the complete field-level complaint resolution process.
+
+Field Staff must be able to:
+
+- View assigned complaints.
+- View complaint location.
+- View supporting images.
+- Accept the assignment.
+- Record inspection details.
+- Update work progress.
+- Add remarks.
+- Upload progress evidence.
+- Upload before-and-after photographs.
+- Submit work completion details.
+
+The Department Officer must then verify the submitted evidence.
+
+If the work is incomplete:
+
+- Return the complaint for correction.
+- Add the reason.
+- Update the status.
+- Notify the assigned Field Staff.
+
+If the work is satisfactory:
+
+- Approve the verification.
+- Update the complaint to Resolved.
+- Notify the citizen.
+
+Field Staff must not approve their own official verification.
+
+---
+
+# 12. SLA MANAGEMENT AND DELAY MONITORING
+
+The official reference portal FAQ describes department-specific resolution timelines based on SLAs.
+
+Use this concept in SMART CIVIC PLATFORM.
+
+Implement configurable SLA settings.
+
+Admin should be able to define:
+
+- Department.
+- Complaint category.
+- Priority.
+- Target response time.
+- Target resolution time.
+- Escalation threshold.
+- Escalation recipient.
+
+Example:
+
+- Critical: shorter configured response and resolution targets.
+- High: priority handling.
+- Medium: normal processing.
+- Low: standard processing.
+
+Do not hardcode government SLA commitments or claim these are official Tamil Nadu Government timelines.
+
+Use application-configured demonstration SLA values until actual authorized policies are provided.
+
+### SLA monitoring
+
+Display:
+
+- SLA start date.
+- Target response date.
+- Target resolution date.
+- Time remaining.
+- Overdue duration.
+- Escalation status.
+
+Automatically flag overdue complaints based on configured SLA rules.
+
+Notify authorized officers when a complaint approaches or exceeds its deadline.
+
+Maintain escalation history.
+
+---
+
+# 13. CITIZEN NOTIFICATIONS
+
+Implement useful notification functionality.
+
+Notify citizens when:
+
+- Complaint submitted successfully.
+- Acknowledgement generated.
+- Complaint reviewed.
+- Department assigned.
+- Field Staff assigned, where appropriate.
+- Work scheduled.
+- Work started.
+- Work progress updated.
+- Work completed.
+- Verification completed.
+- Complaint resolved.
+- Complaint rejected with reason.
+- Appeal submitted.
+- Complaint reopened.
+- Complaint closed.
+
+Provide in-app notifications.
+
+If SMS or email services are configured, integrate them securely.
+
+Do not display SMS sent or email sent unless the provider confirms successful delivery.
+
+Store notification history.
+
+---
+
+# 14. APPEAL AND REOPENING SYSTEM
+
+The reference portal provides an appeal / reopening mechanism for eligible grievances.
+
+Implement a suitable version for SMART CIVIC PLATFORM.
+
+After resolution or closure, citizens should be able to request reopening if the resolution is unsatisfactory.
+
+Provide:
+
+- Appeal / Reopen button.
+- Reason for appeal.
+- Additional description.
+- Optional supporting photograph.
+- Submission timestamp.
+- Appeal status.
+
+Suggested appeal workflow:
+
+Appeal Submitted → Under Review → Accepted / Rejected → Reopened / Closed.
+
+Department Officers or authorized Admin users must review the appeal.
+
+If accepted:
+
+- Reopen the original complaint.
+- Preserve its original complaint ID.
+- Preserve all previous status history.
+- Create a new appeal record linked to the original complaint.
+- Assign the complaint for further action.
+- Notify the citizen.
+
+If rejected:
+
+- Record the reason.
+- Notify the citizen.
+
+Prevent unlimited or duplicate appeals according to configurable application rules.
+
+Do not delete or overwrite the original complaint history.
+
+---
+
+# 15. CITIZEN FEEDBACK AND SATISFACTION
+
+Implement a feedback module inspired by the reference portal.
+
+After a complaint is resolved, allow the citizen to provide feedback.
+
+Include:
+
+- Overall satisfaction rating.
+- Resolution quality.
+- Officer response experience.
+- Optional written feedback.
+- Optional supporting evidence.
+
+Allow one valid feedback submission per resolution cycle unless an authorized correction process exists.
+
+Admin analytics should include:
+
+- Average satisfaction rating.
+- Positive feedback count.
+- Negative feedback count.
+- Feedback by department.
+- Feedback by complaint category.
+
+Use actual feedback records.
+
+Do not generate fake ratings.
+
+---
+
+# 16. MULTILINGUAL SUPPORT – TAMIL AND ENGLISH
+
+The official portal provides Tamil and English grievance access.
+
+Implement bilingual support in SMART CIVIC PLATFORM.
+
+Provide a language selector:
+
+- English.
+- தமிழ்.
+
+Support translation of:
+
+- Navigation labels.
+- Dashboard headings.
+- Complaint forms.
+- Categories.
+- Status names.
+- Notifications.
+- Help content.
+- Validation messages.
+- Acknowledgements.
+- Tracking timeline.
+
+Allow citizens to submit complaint descriptions in Tamil or English.
+
+Do not automatically translate user-submitted complaint descriptions in a way that overwrites the original text.
+
+If AI-assisted translation is available, preserve both original and translated versions and identify translated content clearly.
+
+---
+
+# 17. CITIZEN HELP AND SUPPORT SECTION
+
+Create a dedicated Help and Guidelines page.
+
+Include:
+
+- How to register.
+- How to log in.
+- How to submit a complaint.
+- How to track a complaint.
+- How to understand complaint statuses.
+- How to upload supporting images.
+- How to appeal a resolution.
+- How to provide feedback.
+- Frequently Asked Questions.
+- Contact / Support information.
+
+Use only actual configured support contact details.
+
+Do not invent government helpline numbers or imply that SMART CIVIC PLATFORM is connected to the official CM Helpline.
+
+Provide clear guidance for emergency situations without positioning this platform as an emergency response service.
+
+---
+
+# 18. MULTIPLE COMPLAINT SUBMISSION CHANNELS – FUTURE-READY DESIGN
+
+The official portal supports grievance intake through multiple channels.
+
+Use this concept to make SMART CIVIC PLATFORM extensible.
+
+Design the complaint data model so that complaints can eventually originate from:
+
+- Web portal.
+- Mobile application.
+- Authorized support staff entry.
+- Email integration.
+- Other authorized integrations.
+
+For now, implement only the channels actually supported by our existing application.
+
+If an officer or authorized support user enters a complaint on behalf of a citizen, record:
+
+- Submission channel.
+- Entered by.
+- Citizen details.
+- Date and time.
+- Source reference, where applicable.
+
+Do not display unsupported channels as active services.
+
+Do not claim integration with government helplines, official email systems, or social media.
+
+---
+
+# 19. ADMIN PORTAL – IMPROVED GRIEVANCE MONITORING
+
+Improve the Admin Portal using the useful management concepts from the reference system.
+
+Implement:
+
+### Dashboard
+
+- Total complaints.
+- New complaints.
+- Pending complaints.
+- Department-wise complaints.
+- District-wise complaints.
+- Resolved complaints.
+- Overdue complaints.
+- Appeals.
+- Reopened complaints.
+- Citizen feedback.
+- SLA performance.
+
+### Complaints
+
+- View all complaints.
+- Search and filter.
+- Review complaint details.
+- Assign departments.
+- Assign officers.
+- Monitor progress.
+- View history.
+- Escalate complaints.
+- Verify resolutions.
+
+### Departments
+
+- Department management.
+- Officer management.
+- Department workload.
+- SLA configuration.
+- Resolution statistics.
+
+### Track Complaints
+
+- Search by unique complaint ID.
+- Complete status timeline.
+- Assignment history.
+- Officer updates.
+- Field Staff updates.
+- Appeal history.
+- Resolution evidence.
+
+### Analytics
+
+- Complaint submission trends.
+- Department performance.
+- District performance.
+- SLA compliance.
+- Pending complaint ageing.
+- Resolution duration.
+- Appeal statistics.
+- Citizen feedback.
+
+### Audit Logs
+
+Record important administrative actions.
+
+All analytics must use actual records.
+
+---
+
+# 20. SECURITY, PRIVACY AND ACCOUNTABILITY
+
+Implement the following safeguards:
+
+- Authentication required for personal complaint access.
+- Citizens can access only their own complaints.
+- Field Staff can access assigned complaints.
+- Department Officers can access authorized department records.
+- Admin access is restricted to authorized administrators.
+- Internal remarks are not visible to citizens.
+- Personal information is not exposed on public maps.
+- Attachments are accessible only to authorized users.
+- All important status changes are audited.
+- Appeal records are preserved.
+- Database permissions are enforced on the backend.
+
+Do not expose passwords, API keys, OTP values, authentication tokens, or confidential information.
+
+---
+
+# 21. IMPORTANT DESIGN REQUIREMENTS
+
+Take inspiration from the official portal's simple citizen workflow, but retain the modern visual identity of SMART CIVIC PLATFORM.
+
+Improve:
+
+- Citizen home page.
+- Login and registration.
+- Complaint submission.
+- Complaint acknowledgement.
+- My Dashboard.
+- Complaint tracking.
+- Status timeline.
+- Officer response panels.
+- Appeal forms.
+- Feedback forms.
+- Admin monitoring.
+
+Make the application intuitive for citizens with different levels of technical experience.
+
+Avoid unnecessarily complicated forms.
+
+Use step-by-step complaint submission where appropriate.
+
+Show clear validation and success messages.
+
+Provide useful empty states.
+
+Do not display generic error screens for every page.
+
+---
+
+# 22. TESTING REQUIREMENTS
+
+Test the complete process from start to finish.
+
+### Citizen workflow
+
+1. Register.
+2. Log in.
+3. Submit complaint.
+4. Receive unique complaint ID.
+5. View acknowledgement.
+6. Open My Dashboard.
+7. Track complaint.
+8. Receive officer updates.
+9. View completion evidence.
+10. Submit feedback.
+11. Appeal or reopen if eligible.
+12. Log out.
+
+### Department Officer workflow
+
+1. Log in.
+2. View newly submitted complaints.
+3. Review complaint.
+4. Confirm department.
+5. Assign Field Staff.
+6. Schedule work.
+7. Monitor progress.
+8. Review completion evidence.
+9. Verify or return work.
+10. Handle appeals.
+11. Log out.
+
+### Field Staff workflow
+
+1. Log in.
+2. View assigned complaint.
+3. Accept work.
+4. Update status.
+5. Add remarks.
+6. Upload progress evidence.
+7. Submit completion evidence.
+8. View verification.
+9. Log out.
+
+### Admin workflow
+
+1. Log in.
+2. View all complaints.
+3. View departments.
+4. View users.
+5. Configure SLA.
+6. Monitor escalations.
+7. View complaint history.
+8. View appeals.
+9. View feedback.
+10. View analytics.
+11. Review audit logs.
+12. Log out.
+
+Test database persistence and synchronization across all roles.
+
+Only mark a workflow as passed if it has actually been executed.
+
+---
+
+# 23. STRICT IMPLEMENTATION RULES
+
+1. Keep the application name SMART CIVIC PLATFORM.
+2. Use the official CM Helpline portal only as a functional reference.
+3. Do not copy official branding or claim government affiliation.
+4. Do not rebuild the existing project unnecessarily.
+5. Preserve the existing technology stack.
+6. Preserve existing working features.
+7. Do not create random complaints.
+8. Do not fabricate acknowledgement IDs.
+9. Do not invent status updates.
+10. Do not fabricate officer responses.
+11. Do not invent SLA commitments.
+12. Do not fabricate feedback.
+13. Do not create random images.
+14. Do not fake OTP verification.
+15. Do not expose sensitive citizen data.
+16. Do not allow unauthorized role access.
+17. Do not display generic error pages instead of working pages.
+18. Do not claim an integration exists unless it is implemented and tested.
+19. Do not show fake success messages.
+20. Preserve all existing complaint and user records.
+
+---
+
+# 24. EXECUTION ORDER
+
+Work in this order:
+
+**Phase 1:** Study the publicly accessible official CM Helpline portal and its published FAQ.
+
+**Phase 2:** Map useful reference workflows to existing SMART CIVIC PLATFORM features.
+
+**Phase 3:** Audit the current application and identify missing functionality.
+
+**Phase 4:** Improve Citizen Registration, Login, and Dashboard.
+
+**Phase 5:** Implement structured grievance submission and acknowledgement.
+
+**Phase 6:** Implement My Complaints and Track Complaints.
+
+**Phase 7:** Implement department routing and officer response.
+
+**Phase 8:** Implement Field Staff work management.
+
+**Phase 9:** Implement SLA monitoring and escalations.
+
+**Phase 10:** Implement notifications.
+
+**Phase 11:** Implement appeal, reopening, and feedback.
+
+**Phase 12:** Implement Tamil and English support.
+
+**Phase 13:** Improve Admin monitoring and analytics.
+
+**Phase 14:** Verify database consistency, security, and role permissions.
+
+**Phase 15:** Test all end-to-end workflows.
+
+**Phase 16:** Run the production build and prepare deployment.
+
+---
+
+# FINAL EXPECTATION
+
+I want SMART CIVIC PLATFORM to provide a professional citizen grievance experience inspired by the useful workflows of the Tamil Nadu CM Helpline portal.
+
+A citizen should be able to register, log in, submit a complaint, receive a unique acknowledgement, track the complaint, receive updates, and provide feedback.
+
+Department Officers must be able to review complaints, route them correctly, assign Field Staff, schedule work, monitor progress, verify resolution, and handle appeals.
+
+Field Staff must be able to inspect complaints, update work progress, and submit completion evidence.
+
+Administrators must be able to monitor departments, complaints, users, SLA performance, escalations, appeals, and analytics.
+
+**The entire process must work using real application data, proper role-based permissions, and consistent database records.**
+
+Do not merely copy the reference portal's appearance.
+
+Understand the useful grievance-management concepts, adapt them to our civic infrastructure project, and implement the complete functionality directly in the existing SMART CIVIC PLATFORM source code.
+
+Inspect carefully, implement thoroughly, and test honestly.

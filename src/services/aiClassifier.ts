@@ -21,6 +21,7 @@ interface ClassifyInput {
 const CATEGORY_KEYWORDS: Record<ComplaintCategory, string[]> = {
   Pothole: ['pothole', 'crater', 'hole', 'asphalt', 'tar', 'road dip', 'tarmac pit', 'bump', 'skid'],
   'Road Damage': ['road damage', 'cracked road', 'cave in', 'caving', 'median broken', 'divider', 'speed breaker', 'uneven road', 'footpath broken'],
+  'Footpath Damage': ['footpath', 'pedestrian walkway', 'sidewalk', 'pavement', 'broken paver', 'tactile strip', 'curb stone'],
   Garbage: ['garbage', 'trash', 'waste', 'dump', 'dustbin', 'refuse', 'plastic', 'rotting', 'stench', 'litter', 'overflowing bin'],
   'Water Leakage': ['water leak', 'pipe burst', 'drinking water', 'pipeline', 'leakage', 'gushing water', 'water supply', 'water main'],
   Drainage: ['drain', 'drainage', 'sewage', 'gutter', 'manhole', 'culvert', 'sewer', 'foul water', 'stagnant water', 'clogged drain'],
@@ -37,6 +38,7 @@ const CATEGORY_KEYWORDS: Record<ComplaintCategory, string[]> = {
 const DEPARTMENT_MAP: Record<ComplaintCategory, MunicipalDepartment> = {
   Pothole: 'Public Works Department (PWD)',
   'Road Damage': 'Public Works Department (PWD)',
+  'Footpath Damage': 'Public Works Department (PWD)',
   Garbage: 'Solid Waste Management',
   'Water Leakage': 'Water Supply & Sewerage Board',
   Drainage: 'Water Supply & Sewerage Board',
@@ -111,6 +113,7 @@ export function classifyComplaintOffline(input: ClassifyInput): AIClassification
   const safetyRisks: Record<ComplaintCategory, string> = {
     Pothole: 'Risk of two-wheeler vehicle skidding, vehicle suspension damage, and abrupt emergency braking.',
     'Road Damage': 'Risk of vehicular misalignment, pedestrian tripping hazards, and traffic bottlenecks.',
+    'Footpath Damage': 'Pedestrian tripping hazards, wheelchair access blockage, and forced walking on active carriageways.',
     Garbage: 'High risk of vector-borne illnesses, bacterial proliferation, and rodent infestation.',
     'Water Leakage': 'Loss of potable treated water, undermining of road subgrade, and localized waterlogging.',
     Drainage: 'Sewage backflow into residential basements, dengue/malaria breeding sites, and structural dampness.',
@@ -127,6 +130,7 @@ export function classifyComplaintOffline(input: ClassifyInput): AIClassification
   const suggestedActions: Record<ComplaintCategory, string> = {
     Pothole: 'Deploy road patching crew with cold asphalt mix and reflective safety cones within SLA.',
     'Road Damage': 'Barricade damaged segment; schedule asphalt milling and resurfacing.',
+    'Footpath Damage': 'Re-bed damaged paver blocks on sand cushion and replace broken curb stones.',
     Garbage: 'Dispatch hydraulic garbage compactor truck and apply lime powder disinfectant.',
     'Water Leakage': 'Isolate local valve line and dispatch emergency pipeline repair welder team.',
     Drainage: 'Mobilize super-sucker vacuum de-silting jet vehicle and clear downstream choke.',

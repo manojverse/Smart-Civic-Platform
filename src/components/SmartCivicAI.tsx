@@ -24,11 +24,11 @@ interface Message {
   };
 }
 
-interface CivicSenseAIProps {
+interface SmartCivicAIProps {
   onNavigate?: (tab: string) => void;
 }
 
-export const CivicSenseAI: React.FC<CivicSenseAIProps> = ({ onNavigate }) => {
+export const SmartCivicAI: React.FC<SmartCivicAIProps> = ({ onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
