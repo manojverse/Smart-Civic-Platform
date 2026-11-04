@@ -32,19 +32,30 @@ interface CivicHomeProps {
 }
 
 export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectComplaint }) => {
-  const { complaints, myComplaints, infrastructureProjects, currentUser, isAuthenticated } = useCivic();
+  const {
+    complaints = [],
+    myComplaints = [],
+    infrastructureProjects = [],
+    announcements = [],
+    currentUser,
+    isAuthenticated,
+  } = useCivic();
   const { t, language } = useLanguage();
 
-  const total = complaints.length;
-  const resolved = complaints.filter(
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+  const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
+  const recentComplaints = safeComplaints.slice(0, 4);
+
+  const total = safeComplaints.length;
+  const resolved = safeComplaints.filter(
     (c) => c.status === 'Resolved' || c.status === 'Verified' || c.status === 'Closed'
   ).length;
-  const inProgress = complaints.filter(
+  const inProgress = safeComplaints.filter(
     (c) => c.status === 'In Progress' || c.status === 'Work Completed' || c.status === 'Work Planned'
   ).length;
   const pending = Math.max(0, total - resolved - inProgress);
   const departmentsCount = 8;
-  const projectsCount = infrastructureProjects.length;
+  const projectsCount = (infrastructureProjects || []).length;
 
   return (
     <div className="space-y-8 sm:space-y-12 pb-16">
@@ -190,7 +201,7 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
             {isAuthenticated && currentUser.role === 'citizen' && (
               <button
                 type="button"
-                onClick={() => onNavigate('my_complaints')}
+                onClick={() => onNavigate('my-complaints')}
                 className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition"
               >
                 <span>My Personal Complaints ({currentUser.name}): {myComplaints.length}</span>
@@ -393,7 +404,7 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
       </section>
 
       {/* Public Announcements & Advisories Section */}
-      {announcements && announcements.length > 0 && (
+      {safeAnnouncements.length > 0 && (
         <section className="max-w-6xl mx-auto px-4">
           <div className="bg-slate-900 text-white rounded-2xl p-5 sm:p-6 border border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-4">
@@ -403,10 +414,10 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
                   {language === 'ta' ? 'பொது அறிவிப்புகள் (Announcements)' : 'Public Civic Announcements & Advisories'}
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-400">{announcements.length} Active Notices</span>
+              <span className="text-[11px] text-slate-400">{safeAnnouncements.length} Active Notices</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {announcements.slice(0, 2).map((ann) => (
+              {safeAnnouncements.slice(0, 2).map((ann) => (
                 <div
                   key={ann.id}
                   className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700/80 flex flex-col justify-between gap-2"
@@ -428,7 +439,7 @@ export const CivicHome: React.FC<CivicHomeProps> = ({ onNavigate, onSelectCompla
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-700/60">
                     <span>{ann.department}</span>
-                    <span>{new Date(ann.timestamp).toLocaleDateString()}</span>
+                    <span>{ann.timestamp ? new Date(ann.timestamp).toLocaleDateString() : ''}</span>
                   </div>
                 </div>
               ))}

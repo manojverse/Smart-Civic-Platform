@@ -27,6 +27,8 @@ import {
   StatusHistoryItem,
   AppealRecord,
   getRoleDisplayName,
+  isAdminRole,
+  isDepartmentOfficerRole,
 } from '../types';
 import {
   INITIAL_COMPLAINTS,
@@ -81,9 +83,15 @@ interface CivicContextType {
   resetPassword: (email: string) => Promise<void>;
   complaints: Complaint[];
   myComplaints: Complaint[];
+  departmentComplaints: Complaint[];
   canAccessComplaint: (complaint: Complaint) => boolean;
   canEditProject: (project: InfrastructureProject) => boolean;
   getAllowedNextStatuses: (currentStatus: ComplaintStatus) => ComplaintStatus[];
+  updateComplaintDepartment: (
+    complaintId: string,
+    department: MunicipalDepartment,
+    remarks?: string
+  ) => Promise<void>;
   deleteComplaint: (complaintId: string) => Promise<void>;
   notifications: CivicNotification[];
   selectedComplaint: Complaint | null;
@@ -370,15 +378,18 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 5. Smart Services
   const [services] = useState<SmartServiceItem[]>(SMART_SERVICES);
 
-  // 6. Municipal Announcements
+  // 6. Municipal Announcements (safe array initialization)
   const [announcements, setAnnouncements] = useState<MunicipalAnnouncement[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENTS);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch (e) {}
     }
-    return MUNICIPAL_ANNOUNCEMENTS;
+    return Array.isArray(MUNICIPAL_ANNOUNCEMENTS) ? MUNICIPAL_ANNOUNCEMENTS : [];
   });
 
   // 7. Audit Logs
@@ -754,6 +765,36 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => unsubscribeTasks();
   }, [isAuthenticated]);
 
+  // Real-time Cloud Firestore sync for Municipal Announcements
+  useEffect(() => {
+    if (!isAuthenticated || !auth.currentUser) return;
+    let unsubscribeAnnouncements: () => void = () => {};
+    try {
+      const announcementsColRef = collection(db, 'announcements');
+      unsubscribeAnnouncements = onSnapshot(
+        announcementsColRef,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: MunicipalAnnouncement[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push({ id: docSnap.id, ...docSnap.data() } as MunicipalAnnouncement);
+            });
+            setAnnouncements(
+              list.sort(
+                (a, b) =>
+                  new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
+              )
+            );
+          }
+        },
+        (err) => {
+          console.warn('Firestore announcements snapshot skipped:', err.message);
+        }
+      );
+    } catch (e) {}
+    return () => unsubscribeAnnouncements();
+  }, [isAuthenticated]);
+
   // Save tasks & registered users to localStorage fallback
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(officerTasks));
@@ -762,6 +803,37 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(registeredUsers));
   }, [registeredUsers]);
+
+  // Helper to compare municipal department names / aliases consistently
+  const matchesDepartment = useCallback((deptA?: string, deptB?: string): boolean => {
+    if (!deptA || !deptB) return false;
+    const a = deptA.trim().toLowerCase();
+    const b = deptB.trim().toLowerCase();
+    if (a === b) return true;
+    if (a.includes('pwd') && b.includes('pwd')) return true;
+    if (a.includes('road') && b.includes('pwd')) return true;
+    if (a.includes('water') && b.includes('water')) return true;
+    if (a.includes('waste') && b.includes('waste')) return true;
+    if (a.includes('electric') && b.includes('electric')) return true;
+    if (a.includes('traffic') && b.includes('traffic')) return true;
+    if (a.includes('health') && b.includes('health')) return true;
+    if (a.includes('horticulture') && b.includes('horticulture')) return true;
+    return false;
+  }, []);
+
+  // Department-scoped complaints for the logged-in Department Officer
+  const departmentComplaints = React.useMemo<Complaint[]>(() => {
+    const safeList = Array.isArray(complaints) ? complaints : [];
+    if (!currentUser || isAdminRole(currentUser.role) || !currentUser.department) {
+      return safeList;
+    }
+    const filtered = safeList.filter(
+      (c) =>
+        matchesDepartment(currentUser.department, c.department) ||
+        matchesDepartment(currentUser.department, c.assignedDepartment)
+    );
+    return filtered.length > 0 ? filtered : safeList;
+  }, [complaints, currentUser, matchesDepartment]);
 
   // Strict account-wise personal complaint list for the currently authenticated citizen
   const myComplaints = React.useMemo<Complaint[]>(() => {
@@ -2478,6 +2550,53 @@ const DEMO_PRESET_USERS: Record<
     reassignComplaint(complaintId, { ...officer, department }, remarks);
   };
 
+  // Reassign / Update Complaint Department (Admin / Officer governance)
+  const updateComplaintDepartment = async (
+    complaintId: string,
+    department: MunicipalDepartment,
+    remarks?: string
+  ) => {
+    const nowIso = new Date().toISOString();
+    const target = complaints.find((c) => c.id === complaintId);
+    if (!target) return;
+
+    const timelineItem: StatusHistoryItem = {
+      id: `TL-DEPT-${Date.now()}`,
+      status: target.status,
+      timestamp: nowIso,
+      updatedBy: `${currentUser.name} (${getRoleDisplayName(currentUser.role)})`,
+      role: currentUser.role,
+      remarks: remarks || `Complaint routed/reassigned to ${department}.`,
+    };
+
+    const updated: Complaint = {
+      ...target,
+      department,
+      assignedDepartment: department,
+      updatedAt: nowIso,
+      timeline: [...(target.timeline || []), timelineItem],
+    };
+
+    try {
+      await setDoc(doc(db, 'complaints', complaintId), updated, { merge: true });
+    } catch (e) {}
+
+    setComplaints((prev) => prev.map((c) => (c.id === complaintId ? updated : c)));
+    if (selectedComplaint?.id === complaintId) {
+      setSelectedComplaint(updated);
+    }
+
+    addAuditLog({
+      complaintId,
+      user: currentUser.name,
+      role: currentUser.role,
+      action: 'DEPARTMENT_REASSIGNED',
+      details: `Reassigned complaint ${complaintId} to ${department}.`,
+    });
+
+    showToast('Department Updated', `Complaint ${complaintId} routed to ${department}.`, 'success');
+  };
+
   // Broadcast Municipal Announcement
   const broadcastAnnouncement = (
     announcement: Omit<MunicipalAnnouncement, 'id' | 'timestamp'>
@@ -2487,7 +2606,13 @@ const DEMO_PRESET_USERS: Record<
       timestamp: new Date().toISOString(),
       ...announcement,
     };
-    setAnnouncements((prev) => [newAnn, ...prev]);
+    setAnnouncements((prev) => [newAnn, ...(Array.isArray(prev) ? prev : [])]);
+
+    if (auth.currentUser) {
+      try {
+        setDoc(doc(db, 'announcements', newAnn.id), newAnn, { merge: true }).catch(() => {});
+      } catch (e) {}
+    }
 
     addAuditLog({
       user: currentUser.name,
@@ -2870,9 +2995,11 @@ const DEMO_PRESET_USERS: Record<
         setCurrentUser,
         complaints,
         myComplaints,
+        departmentComplaints,
         canAccessComplaint,
         canEditProject,
         getAllowedNextStatuses,
+        updateComplaintDepartment,
         deleteComplaint,
         notifications,
         selectedComplaint,

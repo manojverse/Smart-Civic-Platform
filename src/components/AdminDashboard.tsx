@@ -67,7 +67,7 @@ export const AdminDashboard: React.FC = () => {
     getAllowedNextStatuses,
     assignOfficer,
     broadcastAnnouncement,
-    announcements,
+    announcements = [],
     addAuditLog,
   } = useCivic();
 
@@ -1680,7 +1680,9 @@ export const AdminDashboard: React.FC = () => {
                       <span>•</span>
                       <span>Ward: {c.location.ward}</span>
                       <span>•</span>
-                      <span className="font-medium text-slate-700">Citizen: {c.reportedBy || 'Anonymous'}</span>
+                      <span className="font-medium text-slate-700">
+                        Citizen: {typeof c.reportedBy === 'string' ? c.reportedBy : c.reportedBy?.name || 'Anonymous'}
+                      </span>
                       {c.photoAnalysis && (
                         <>
                           <span>•</span>

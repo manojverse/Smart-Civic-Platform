@@ -89,11 +89,13 @@ export type ComplaintCategory =
   | 'Water Leakage'
   | 'Drainage'
   | 'Streetlight'
+  | 'Electricity'
   | 'Traffic'
   | 'Pollution'
   | 'Public Property Damage'
   | 'Park Issue'
   | 'Sanitation'
+  | 'Public Health'
   | 'Public Toilet'
   | 'Other';
 
@@ -316,11 +318,22 @@ export interface Complaint {
     email?: string;
   };
   citizenId?: string;
+  userId?: string;
+  reportedByEmail?: string;
   department?: MunicipalDepartment;
+  assignedDepartment?: MunicipalDepartment;
   projectId?: string;
   assignedOfficer?: AssignedOfficer;
   workerProof?: WorkerProof;
   verificationDetails?: VerificationDetails;
+  officialVerification?: {
+    status?: string;
+    verifiedBy: string;
+    verifiedAt: string;
+    remarks?: string;
+    slaComplianceMet?: boolean;
+    qualityScore?: number;
+  };
   internalNotes?: {
     id: string;
     author: string;
